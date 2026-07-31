@@ -1,0 +1,18 @@
+{
+  "name": "wiki-skills",
+  "owner": {
+    "name": "bronsonhill",
+    "url": "https://github.com/bronsonhill"
+  },
+  "metadata": {
+    "description": "Skills for maintaining agentic personal wikis (the Karpathy pattern).",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "wiki",
+      "source": "./plugins/wiki",
+      "description": "Ingest, lint, query, and generate revision material from a personal wiki."
+    }
+  ]
+}

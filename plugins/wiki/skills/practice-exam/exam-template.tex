@@ -1,0 +1,139 @@
+% Practice-exam template — `exam` document class.
+% Toggle the answer key by commenting/uncommenting \printanswers below.
+% Build:  bash .claude/skills/practice-exam/build.sh this-file.tex
+\documentclass[11pt,addpoints]{exam}
+
+% --- packages (all in TeX Live, verified available) ---
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}   % math
+\usepackage{booktabs}          % \toprule etc. for tables
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{graphicx}
+
+% --- answer key: uncomment to render model solutions inline ---
+% \printanswers
+
+% --- header / footer ---
+\pagestyle{headandfoot}
+\firstpageheader{Computational Modelling and Simulation}{}{Practice Exam}
+\runningheader{CMAS}{Practice Exam}{\thepage}
+\firstpagefooter{}{Page \thepage\ of \numpages}{}
+\runningfooter{}{Page \thepage\ of \numpages}{}
+
+\begin{document}
+
+% --- cover page ---
+\begin{center}
+  {\Large\bfseries The University of Melbourne}\\[2pt]
+  School of Computing and Information Systems\\[1em]
+  {\Large Computational Modelling and Simulation}\\[4pt]
+  {\large Practice Exam}\\[1em]
+  Reading time: 15 minutes \quad Writing time: 2 hours
+\end{center}
+\vspace{1em}
+\noindent\textbf{Instructions:} Answer all questions. Marks are shown next to
+each part. Total: \numpoints\ marks across \numquestions\ questions.
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\begin{questions}
+
+% ===== Section A: Short Answer =====
+\section*{Section A: Short Answer Questions}
+
+% NOTE: marks go on \part only, never on \question — putting points on both
+% makes the `exam` class double-count them in \numpoints. Show the question
+% subtotal in the title text instead, as below.
+\question
+\textbf{General Concepts. [8 marks]}
+\begin{parts}
+  \part[4] Explain emergence in the context of agent-based modelling, and give
+    one example of a globally observable pattern that arises from purely local
+    agent rules.
+    \begin{solution}
+      Emergence is complex, often unpredictable system-level behaviour that
+      arises from the interaction of many simple agents following local rules,
+      without any agent being explicitly programmed to produce it. Example:
+      flocking behaviour (e.g. Boids) emerges from each agent following only
+      local alignment, cohesion, and separation rules.
+    \end{solution}
+  \part[4] What is the difference between a synchronous and an asynchronous
+    update scheme in a cellular automaton, and why does the choice matter?
+    \begin{solution}
+      Synchronous update computes every cell's next state from the current
+      grid and applies all changes simultaneously; asynchronous update applies
+      changes one cell at a time, so later cells in the same tick may read
+      already-updated neighbours. The choice matters because some rule sets
+      (e.g. Conway's Game of Life) assume simultaneity and behave differently,
+      sometimes unpredictably, under asynchronous update.
+    \end{solution}
+\end{parts}
+
+% ===== Section B: Method =====
+\section*{Section B: Method Questions}
+
+\question
+\textbf{Cellular Automata. [12 marks]} Consider a 1D elementary cellular
+automaton.
+\begin{parts}
+  \part[6] Explain how Wolfram's rule numbering scheme (e.g. "Rule 30")
+    encodes a 1D CA's update rule, and compute the output bit for the
+    neighbourhood \texttt{110} under Rule 30.
+    \begin{solution}
+      Each of the 8 possible 3-cell neighbourhoods (from \texttt{111} down to
+      \texttt{000}) is assigned an output bit; the 8 bits, read as a binary
+      number, give the rule number. Rule 30 in binary is \texttt{00011110},
+      giving neighbourhood outputs
+      $111{\to}0,\,110{\to}0,\,101{\to}0,\,100{\to}1,\,011{\to}1,\,010{\to}1,\,001{\to}1,\,000{\to}0$.
+      So \texttt{110} $\to$ \texttt{0}.
+    \end{solution}
+  \part[6] Why can simple 1D CA rules like Rule 30 or Rule 110 still produce
+    highly complex, seemingly random or computationally universal behaviour?
+    \begin{solution}
+      Even a small local rule space, iterated over many cells and time steps,
+      can generate long-range correlations and non-repeating patterns that
+      are not predictable from the rule alone without simulation — this is
+      Wolfram's notion of computational irreducibility. Rule 110 is proven
+      Turing-complete, showing simple local rules can support universal
+      computation.
+    \end{solution}
+\end{parts}
+
+% ===== Section C: Algorithmic =====
+\section*{Section C: Algorithmic Questions}
+
+\question
+\textbf{Conway's Game of Life. [10 marks]} Consider the 3x3 grid below (1 = live,
+0 = dead), using standard Game of Life rules (a live cell survives with 2-3 live
+neighbours; a dead cell with exactly 3 live neighbours becomes alive) and an
+8-cell (Moore) neighbourhood, ignoring cells outside the grid.
+\begin{center}
+  \begin{tabular}{ccc}
+    \toprule
+    0 & 1 & 0 \\
+    0 & 1 & 0 \\
+    0 & 1 & 0 \\
+    \bottomrule
+  \end{tabular}
+\end{center}
+Compute the grid at the next time step and state the resulting pattern's name.
+\begin{solution}
+  Centre column (blinker): the middle-row cells' neighbour counts change from
+  vertical to horizontal alignment. Next state:
+  \begin{center}
+    \begin{tabular}{ccc}
+      \toprule
+      0 & 0 & 0 \\
+      1 & 1 & 1 \\
+      0 & 0 & 0 \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  This is the classic "blinker" oscillator, alternating between vertical and
+  horizontal orientation with period 2.
+\end{solution}
+
+\end{questions}
+\end{document}
