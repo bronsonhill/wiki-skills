@@ -1,6 +1,6 @@
 % Practice-exam template — `exam` document class.
 % Toggle the answer key by commenting/uncommenting \printanswers below.
-% Build:  bash .claude/skills/practice-exam/build.sh this-file.tex
+% Build:  bash "${CLAUDE_PLUGIN_ROOT}/skills/practice-exam/build.sh" this-file.tex
 \documentclass[11pt,addpoints]{exam}
 
 % --- packages (all in TeX Live, verified available) ---
@@ -16,8 +16,8 @@
 
 % --- header / footer ---
 \pagestyle{headandfoot}
-\firstpageheader{Computational Modelling and Simulation}{}{Practice Exam}
-\runningheader{CMAS}{Practice Exam}{\thepage}
+\firstpageheader{SUBJECT NAME}{}{Practice Exam}
+\runningheader{SUBJECT CODE}{Practice Exam}{\thepage}
 \firstpagefooter{}{Page \thepage\ of \numpages}{}
 \runningfooter{}{Page \thepage\ of \numpages}{}
 
@@ -27,7 +27,7 @@
 \begin{center}
   {\Large\bfseries The University of Melbourne}\\[2pt]
   School of Computing and Information Systems\\[1em]
-  {\Large Computational Modelling and Simulation}\\[4pt]
+  {\Large SUBJECT NAME}\\[4pt]
   {\large Practice Exam}\\[1em]
   Reading time: 15 minutes \quad Writing time: 2 hours
 \end{center}

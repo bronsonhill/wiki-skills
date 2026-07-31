@@ -1,8 +1,8 @@
 ---
 name: practice-exam
 description: >
-  Generate a practice exam as a typeset PDF (LaTeX) for CMAS, drawing questions
-  from the wiki (wiki/) and, optionally, mimicking the style/structure
+  Generate a practice exam as a typeset PDF (LaTeX) for a subject, drawing questions
+  from a personal wiki and, optionally, mimicking the style/structure
   of one or more example exam PDFs the user supplies. Use when the user wants to
   "make a practice exam", "generate a mock exam", "create exam questions as a PDF",
   "build a sample exam from the wiki", or "produce a LaTeX exam with an answer key".
@@ -11,13 +11,17 @@ description: >
 
 # Practice Exam Generator
 
-Builds a practice exam as a typeset PDF. Question *content* comes from the CMAS
-wiki (`wiki/`); the *format* (sections, mark weighting, question types)
+Builds a practice exam as a typeset PDF. Question *content* comes from the wiki; the *format* (sections, mark weighting, question types)
 is mimicked from example exam PDFs when the user supplies them. Output is a LaTeX
 `.tex` using the `exam` document class, compiled to PDF by the driver.
 
+Paths and naming come from the consuming repo's `.claude/wiki-schema.md` — see the
+configuration table in `wiki_ingest`. This skill reads `wiki_root`, `derived_dir`,
+`domains`, `subject`, and `source_policy`. When `domains` is configured, draw questions
+only from pages whose `domain` matches the requested subject.
+
 The interaction surface is the LaTeX→PDF compile. **The driver is
-`.claude/skills/practice-exam/build.sh`** — it runs `pdflatex` twice (so the `exam`
+`${CLAUDE_PLUGIN_ROOT}/skills/practice-exam/build.sh`** — it runs `pdflatex` twice (so the `exam`
 class resolves mark totals and `Page X of N`), surfaces real errors from the `.log`
 on failure, and prints the PDF path + page count.
 
@@ -64,17 +68,23 @@ slot, pick a *different* examinable topic or a *different* scenario/instance tha
 the example uses. After drafting, diff your questions against the example: if any
 part maps 1:1 onto an example part, replace it.
 
-Never copy the example exam's own text into `wiki/` or into the output `.tex` —
-university exam papers are copyright, same as lecture material (see
-`.claude/wiki-schema.md`). Read it only to infer structure.
+Never copy the example exam's own text into the wiki or into the output `.tex`.
+University exam papers are copyright, same as lecture material — under
+`source_policy: link-only` this is non-negotiable, and it is good practice regardless.
+Read the example only to infer structure.
 
 ## Step 3 — Author the .tex
 
 Copy the template and replace the questions with wiki-grounded ones:
 
 ```bash
-cp .claude/skills/practice-exam/exam-template.tex "<topic>-practice-exam.tex"
+cp "${CLAUDE_PLUGIN_ROOT}/skills/practice-exam/exam-template.tex" "<topic>-practice-exam.tex"
 ```
+
+The template ships with `SUBJECT NAME` and `SUBJECT CODE` placeholders in the headers
+and title block. Replace them from the schema's `subject` key (and the subject code
+where the wiki records one) before compiling — a paper still carrying the placeholders
+is a bug, not a draft.
 
 Rules:
 - Put marks on `\part[N]` **only**, never on `\question` as well — the `exam`
@@ -93,14 +103,14 @@ Rules:
 Question paper (solutions hidden — `\printanswers` stays commented):
 
 ```bash
-bash .claude/skills/practice-exam/build.sh "<topic>-practice-exam.tex"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/practice-exam/build.sh" "<topic>-practice-exam.tex"
 ```
 
 Answer key (enable `\printanswers`, build a separate file):
 
 ```bash
 sed 's/^% \\printanswers/\\printanswers/' "<topic>-practice-exam.tex" > "<topic>-practice-exam-answers.tex"
-bash .claude/skills/practice-exam/build.sh "<topic>-practice-exam-answers.tex"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/practice-exam/build.sh" "<topic>-practice-exam-answers.tex"
 ```
 
 The driver prints e.g. `OK: /…/exam.pdf (2 pages)`. On a LaTeX error it prints
@@ -157,7 +167,7 @@ explicitly wants a shared practice-exam bank.
 
 ## The driver
 
-`.claude/skills/practice-exam/build.sh` — compiles a `.tex` to PDF (two `pdflatex`
+`${CLAUDE_PLUGIN_ROOT}/skills/practice-exam/build.sh` — compiles a `.tex` to PDF (two `pdflatex`
 passes), extracts log errors on failure, prints PDF path + page count.
-`exam-template.tex` — the starting CMAS-shaped exam with the `\printanswers`
+`exam-template.tex` — the starting exam skeleton with the `\printanswers`
 toggle, solution blocks, a `booktabs` table, and math.

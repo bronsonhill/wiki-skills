@@ -2,7 +2,7 @@
 """Convert an Obsidian Spaced Repetition cue-card deck into an Anki-importable TSV.
 
 Usage:
-    python3 to_anki_tsv.py wiki/materials/<topic>-cue-cards.md
+    python3 to_anki_tsv.py <path-to>/<topic>-cue-cards.md
 
 Writes `<deck>.anki.tsv` next to the input file: three tab-separated columns
 (Front, Back, Tags), one row per card. Wikilinks are stripped to their display

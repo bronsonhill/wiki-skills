@@ -1,30 +1,46 @@
 ---
 name: wiki_ingest
 description: >
-  Ingest a new source into the CMAS wiki (wiki/). Use this skill whenever
-  the user wants to add a source (Canvas lecture, paper, video, textbook chapter,
-  external article) to the wiki, or says things like "ingest this", "add this to the
-  wiki", "process this source", or "file this". The skill writes a source stub (link +
-  original summary — never a copy of copyrighted material), then creates/updates
-  entity and concept pages, and refreshes the section indexes and wiki/log.md.
-  Always use this skill when a source needs to be incorporated into wiki/ — even
-  if the user just says "read this and add it".
+  Ingest a new source into a personal wiki. Use this skill whenever the user wants to
+  add a source (lecture, paper, video, textbook chapter, external article) to the wiki,
+  or says things like "ingest this", "add this to the wiki", "process this source", or
+  "file this". The skill writes the source page, then creates/updates entity and concept
+  pages, and refreshes the indexes and log. Always use this skill when a source needs to
+  be incorporated into the wiki — even if the user just says "read this and add it".
 ---
 
-# Content Ingest
+# Wiki Ingest
 
-Handles the full ingest pipeline for one source into the CMAS wiki. The wiki
-is a persistent, compounding knowledge base for the Computational Modelling and
-Simulation subject, built collaboratively by students and maintained largely by the
-agent. See `.claude/wiki-schema.md` for the schema this skill implements.
+Handles the full ingest pipeline for one source into a persistent, compounding wiki
+(the Karpathy agentic-wiki pattern). The human curates sources and asks good questions;
+you do the writing and maintenance.
 
-**Copyright constraint — read this first:** University of Melbourne course material
-(lecture slides, recordings, PDFs) is copyright and this repo is public. You may read
-the source to understand it, but never copy its text, images, or files into the repo.
-The source page you write is a link plus an original summary in your own words.
-Exception: sources that are themselves open (public papers, textbooks with a
-permissive licence, your own notes) can be described more liberally, but still don't
-paste large verbatim blocks — summarise.
+## Wiki configuration — read this first
+
+This skill is wiki-agnostic. Every path and policy below comes from the consuming
+repo's `.claude/wiki-schema.md`, read from its YAML frontmatter. Read that file before
+doing anything else, and fall back to these defaults for any key it omits:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `wiki_root` | `wiki` | Root directory of the vault. |
+| `source_policy` | `link-only` | `link-only` records a URL and an original summary and never copies the source into the repo. `archive-raw` also copies the file into `raw_dir`. |
+| `raw_dir` | `sources/raw` | Where archived originals live, relative to `wiki_root`. Only meaningful under `archive-raw`. |
+| `derived_dir` | `materials` | Section holding worked examples, syntheses, and revision material. |
+| `index_style` | `per-section` | `per-section` keeps an `index.md` in each section plus a root catalog; `root-only` keeps a single `index.md` at the wiki root. |
+| `domains` | *(empty)* | Allowed `domain` values. When empty the wiki covers one subject and pages carry no `domain` field. When non-empty, every content page needs one. |
+| `subject` | *(none)* | Display name of the subject, for page prose and generated documents. |
+| `git_workflow` | `none` | `pr` opens a branch and PR after an ingest, `direct` commits to the current branch, `none` leaves version control alone. |
+
+Under `source_policy: link-only` the constraint is not stylistic. That policy is set by
+wikis whose sources are copyright and whose repo is public or shared. Read the source to
+understand it, but never copy its text, images, or files into the repo — the page you
+write is a link plus an original summary in your own words. Sources that are themselves
+open (public papers, permissively licensed textbooks, the user's own notes) can be
+described more liberally, but still summarise rather than pasting long verbatim blocks.
+
+If `.claude/wiki-schema.md` does not exist, say so and offer to create one before
+ingesting, rather than guessing at the wiki's conventions.
 
 ---
 
@@ -35,12 +51,18 @@ you hit a genuine ambiguity — show the full result first, then discuss.
 
 ### Step 1 — Identify the source
 
-Get (or ask for) the Canvas/external URL, the source's title, and its type (lecture,
-reading, paper, video, textbook chapter, tutorial). If given a local file (e.g. a PDF
-the user has open), read it for understanding only — it is not copied into the repo.
+Get (or ask for) the source's URL, title, and type (lecture, reading, paper, video,
+textbook chapter, tutorial).
 
 Derive a kebab-case slug from the title, e.g. `l04-cellular-automata.md` or
-`wolfram-a-new-kind-of-science.md`.
+`wolfram-a-new-kind-of-science.md`. If the original filename is already descriptive and
+kebab-case, keep it.
+
+Then branch on `source_policy`. Under `link-only`, a local file the user supplies (a PDF
+they have open, a downloaded deck) is read for understanding only and never copied into
+the repo. Under `archive-raw`, copy it unmodified to `<wiki_root>/<raw_dir>/<slug>.<ext>`
+so the original stays available for re-reading; keeping archived originals in their own
+directory rather than beside the `.md` pages keeps the Obsidian graph clean.
 
 ### Step 2 — Read the source thoroughly
 
@@ -53,14 +75,15 @@ Build a mental model of:
 
 ### Step 3 — Write the source page
 
-Write `wiki/sources/<slug>.md`:
+Write `<wiki_root>/sources/<slug>.md`:
 
 ```markdown
 ---
 title: <Title>
 type: source
 source_type: <lecture | reading | paper | video | textbook | tutorial | other>
-link: <Canvas URL or external URL>
+link: <source URL>
+domain: <required when `domains` is non-empty; omit otherwise>
 tags: [<relevant tags>]
 date: <YYYY-MM-DD>
 ---
@@ -69,7 +92,7 @@ date: <YYYY-MM-DD>
 
 ## Overview
 <2-4 paragraph original summary. What this source covers and why it matters. Written
-for a reader who hasn't seen the source — never copy its wording.>
+for a reader who hasn't seen the source. Under `link-only`, never copy its wording.>
 
 ## Key concepts
 <List concepts central to this source, each linked: [[concept-name]]. Create stubs in
@@ -88,8 +111,7 @@ Overview's depth, focus on completeness.>
 <Precise, citable bullets of the most important factual claims or findings.>
 
 ## Connections
-<Cross-references to other wiki/ pages this source relates to, extends, or
-contradicts.>
+<Cross-references to other wiki pages this source relates to, extends, or contradicts.>
 ```
 
 ### Step 4 — Update concept and entity pages
@@ -99,7 +121,7 @@ defines, or meaningfully discusses.
 
 For each:
 
-1. **Check if a page already exists** in `wiki/concepts/` or `wiki/entities/`.
+1. **Check if a page already exists** in `<wiki_root>/concepts/` or `<wiki_root>/entities/`.
 2. **If it exists:** append a `## Sources` entry linking to the new source. Update the
    body if the new source adds meaningful new information or refines the definition —
    note contradictions explicitly rather than silently overwriting.
@@ -115,13 +137,14 @@ The distinction:
 When in doubt: can you point at the specific thing? → Entity. Do you need to explain
 what it means? → Concept.
 
-#### Entity page template (`wiki/entities/<slug>.md`)
+#### Entity page template (`<wiki_root>/entities/<slug>.md`)
 
 ```markdown
 ---
 title: <Name>
 type: entity
 entity_type: <person | paper | model | software | organisation | dataset | other>
+domain: <required when `domains` is non-empty; omit otherwise>
 tags: []
 date: <YYYY-MM-DD>
 ---
@@ -133,19 +156,20 @@ date: <YYYY-MM-DD>
 ## Key facts
 <Bullet list of the most important facts.>
 
-## Relevance to CMAS
-<Why this entity matters in the context of computational modelling and simulation.>
+## Relevance
+<Why this entity matters in the context of `subject` (or of the wiki's scope).>
 
 ## Sources
 - [[sources/<slug>]] — <one-line note on how this source relates to the entity>
 ```
 
-#### Concept page template (`wiki/concepts/<slug>.md`)
+#### Concept page template (`<wiki_root>/concepts/<slug>.md`)
 
 ```markdown
 ---
 title: <Concept name>
 type: concept
+domain: <required when `domains` is non-empty; omit otherwise>
 tags: []
 date: <YYYY-MM-DD>
 ---
@@ -163,7 +187,7 @@ equation), add this section using proper Obsidian LaTeX: `$...$` inline, `$$...$
 block.>
 
 ## Why it matters
-<Significance in the context of modelling and simulation.>
+<Significance in the context of `subject` (or of the wiki's scope).>
 
 ## Relationships
 <Links to related concepts and entities: [[other-concept]], [[entity-name]]>
@@ -172,26 +196,31 @@ block.>
 - [[sources/<slug>]] — <one-line note on what this source says about the concept>
 ```
 
-### Step 5 — Update section indexes
+### Step 5 — Update the indexes
 
-Each of `wiki/sources/index.md`, `wiki/entities/index.md`,
-`wiki/concepts/index.md` keeps its short description at the top, followed by a
-catalog. Append new pages under a `## Pages` heading (create it if missing):
+Under `index_style: per-section`, each of `<wiki_root>/sources/index.md`,
+`entities/index.md`, `concepts/index.md`, and `<derived_dir>/index.md` keeps its short
+description at the top followed by a catalog, and `<wiki_root>/index.md` links to each
+section. Under `root-only`, there is a single `<wiki_root>/index.md` holding every entry
+grouped by section.
+
+Either way, append new pages under a `## Pages` heading (create it if missing) and never
+overwrite an existing catalog:
 
 ```markdown
 ## Pages
 - [[<slug>]] — <one-line description> | added: YYYY-MM-DD
 ```
 
-### Step 6 — Append to wiki/log.md
+### Step 6 — Append to the log
 
-Append a single entry (create the file with a `# Content Log` header if it doesn't
-exist yet):
+Append a single entry to `<wiki_root>/log.md` (create the file with a `# Wiki Log`
+header if it doesn't exist yet):
 
 ```markdown
 ## [<YYYY-MM-DD>] ingest | <source title>
 
-- **Source page:** `wiki/sources/<slug>.md`
+- **Source page:** `<wiki_root>/sources/<slug>.md`
 - **New concept pages:** <list or "none">
 - **New entity pages:** <list or "none">
 - **Updated pages:** <list or "none">
@@ -200,10 +229,10 @@ exist yet):
 ### Step 7 — Run wiki_lint
 
 Always invoke the `wiki_lint` skill after writing all pages
-(`python3 .claude/skills/wiki_lint/lint.py`). Resolve any new dangling links or
-index drift it reports before closing out the ingest. Append the lint result to
-`wiki/log.md` and write the full report to
-`wiki/lint-reports/<YYYY-MM-DD>.md`.
+(`python3 "${CLAUDE_PLUGIN_ROOT}/skills/wiki_lint/lint.py"`). Resolve any new dangling
+links or index drift it reports before closing out the ingest. Append the lint result to
+`<wiki_root>/log.md` and write the full report to
+`<wiki_root>/lint-reports/<YYYY-MM-DD>.md`.
 
 This is non-optional — ingests that skip linting accumulate orphans and index drift
 quickly, especially with multiple contributors working in parallel.
@@ -227,24 +256,28 @@ questions — revise before closing out.
 ## Quality standards
 
 - **Summaries** should be genuinely useful to a reader who hasn't seen the source —
-  synthesise, don't transcribe, and never copy copyrighted wording.
+  synthesise, don't transcribe, and respect `source_policy` on wording.
 - **Concept and entity pages** should be updated on every ingest that touches them,
   not just when the source is primarily about them.
 - **Cross-references** should be bidirectional where meaningful.
 - **Contradictions** should be flagged explicitly, not silently overwritten.
 
-## Git / PR workflow
+## Version control
 
-This repo is public and collaborative — `wiki/` is not a separate wiki repo, it's
-versioned in this same repo via normal PRs. After an ingest:
+Follow `git_workflow` from the schema.
+
+Under `pr`, the wiki is versioned in a shared repo and ingests land as reviewed
+branches:
 
 ```bash
 git checkout -b ingest/<slug>
-git add wiki/sources/<slug>.md wiki/concepts/* wiki/entities/* \
-  wiki/*/index.md wiki/log.md wiki/lint-reports/*
+git add <wiki_root>
 git commit -m "ingest: <source title> — added <N> concepts, <M> entities"
 git push -u origin ingest/<slug>
 ```
 
-Then open a PR (see `CONTRIBUTING.md`). Don't push directly to `main` unless the user
-explicitly says to.
+Then open a PR (check the repo's `CONTRIBUTING.md`). Don't push directly to the default
+branch unless the user explicitly says to.
+
+Under `direct`, commit to the current branch with the same message format and no PR.
+Under `none`, leave version control alone — the wiki may not be a git repo at all.

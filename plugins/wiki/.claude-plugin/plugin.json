@@ -1,10 +1,16 @@
 {
   "name": "wiki",
   "description": "Ingest, lint, query, and generate revision material from a personal wiki. Reads per-repo configuration from .claude/wiki-schema.md.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "bronsonhill",
     "url": "https://github.com/bronsonhill"
   },
-  "keywords": ["wiki", "knowledge-base", "obsidian", "spaced-repetition", "study"]
+  "keywords": [
+    "wiki",
+    "knowledge-base",
+    "obsidian",
+    "spaced-repetition",
+    "study"
+  ]
 }

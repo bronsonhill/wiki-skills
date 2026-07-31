@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Skills for maintaining agentic personal wikis (the Karpathy pattern).",
-    "version": "0.1.0"
+    "version": "0.1.1"
   },
   "plugins": [
     {

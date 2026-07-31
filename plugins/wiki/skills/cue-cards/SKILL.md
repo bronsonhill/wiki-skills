@@ -1,9 +1,9 @@
 ---
 name: cue-cards
 description: >
-  Generate high-quality, spaced-repetition-ready cue cards from the CMAS wiki
-  (wiki/). Use this skill when the user wants flashcards for revision from
-  any content page (source, concept, entity, or material). Cards follow cognitive
+  Generate high-quality, spaced-repetition-ready cue cards from a personal wiki.
+  Use this skill when the user wants flashcards for revision from any content page
+  (source, concept, entity, or derived material). Cards follow cognitive
   science principles (elaborative interrogation, desirable difficulty, contrast,
   failure modes) and are produced in a tool-agnostic canonical format, then rendered
   to both the Obsidian Spaced Repetition plugin format and an Anki-importable TSV
@@ -15,10 +15,14 @@ description: >
 # Cue Card Generator
 
 Creates cue cards optimised for long-term retention and genuine understanding from
-`wiki/`. The card *content* is tool-agnostic; two renderers turn it into whatever
+the wiki. The card *content* is tool-agnostic; two renderers turn it into whatever
 format the reader's SRS tool needs — Obsidian Spaced Repetition (native `.md`, lives
 in the wiki, wikilinks preserved) or Anki (`.tsv` import, wikilinks stripped since
 Anki has no concept of them).
+
+Paths come from the consuming repo's `.claude/wiki-schema.md` — see the configuration
+table in `wiki_ingest`. This skill reads `wiki_root`, `derived_dir`, `domains`, and
+`subject`.
 
 ## Step 1 — Select source material
 
@@ -86,12 +90,13 @@ The next state calculation for one cell may read already-updated neighbours from
   but keep each card self-contained — a reader shouldn't need to follow the link to
   answer it.
 - **Keep answers concise but complete.** 2-5 sentences max, quickly self-verifiable.
-- **Tag every card** in the format `#card/cmas #card/<topic>` so decks can be filtered.
+- **Tag every card** in the format `#card/<subject> #card/<topic>`, taking `<subject>`
+  from the schema's `subject` key (kebab-cased), so decks can be filtered.
 
 ## Step 4 — Write the canonical deck (Obsidian Spaced Repetition format)
 
 Output cards grouped under standard section headers, in a single
-`wiki/materials/<topic>-cue-cards.md` file. This is the source of truth; the Anki
+`<wiki_root>/<derived_dir>/<topic>-cue-cards.md` file. This is the source of truth; the Anki
 export in Step 5 is generated from it.
 
 ### Deck header
@@ -111,7 +116,7 @@ export in Step 5 is generated from it.
 Question text here (can span multiple sentences)?
 ?
 Answer text here (can span multiple sentences or include numbered lists).
-#card/cmas #card/<topic>
+#card/<subject> #card/<topic>
 ```
 
 ### Deck notes
@@ -126,10 +131,11 @@ convention) — `wiki_lint` exempts them from the frontmatter check.
 Run the converter on the deck you just wrote:
 
 ```bash
-python3 .claude/skills/cue-cards/scripts/to_anki_tsv.py wiki/materials/<topic>-cue-cards.md
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/cue-cards/scripts/to_anki_tsv.py" \
+  <wiki_root>/<derived_dir>/<topic>-cue-cards.md
 ```
 
-This writes `wiki/materials/<topic>-cue-cards.anki.tsv` next to it — a
+This writes `<topic>-cue-cards.anki.tsv` next to it — a
 tab-separated `Front\tBack\tTags` file with wikilinks stripped to plain text and
 answer newlines converted to `<br>` (Anki fields are HTML). To import in Anki:
 **File → Import**, select the `.tsv`, map the three columns to Front/Back/Tags, and
@@ -143,7 +149,7 @@ use Anki instead of Obsidian.
 
 The Obsidian Spaced Repetition plugin writes its scheduling state
 (`<!--SR:!YYYY-MM-DD,interval,ease-->`) as an inline comment directly under each
-card, inside the tracked `.md` file. Since `wiki/materials/` is shared, that turns
+card, inside the tracked `.md` file. Where the wiki is shared, that turns
 every personal review session into a git diff full of someone else's progress data
 on a shared file. Never commit those comments, and don't strip-then-recommit them
 as a normal workflow either — prevent them from landing in the first place:
@@ -155,7 +161,7 @@ as a normal workflow either — prevent them from landing in the first place:
   the deck file `--skip-worktree` in their local clone first, so the plugin's
   inline writes stay local and invisible to `git status`/`diff`:
   ```bash
-  git update-index --skip-worktree wiki/materials/<topic>-cue-cards.md
+  git update-index --skip-worktree <wiki_root>/<derived_dir>/<topic>-cue-cards.md
   ```
   This is a local-only, per-clone setting (not shared via git). They'll need to
   `git update-index --no-skip-worktree` on that file before pulling upstream
@@ -168,7 +174,7 @@ as a normal workflow either — prevent them from landing in the first place:
 
 After generating cards:
 - Note which content pages the cards are derived from.
-- Update `wiki/materials/index.md` and append to `wiki/log.md`.
+- Update the relevant `index.md` and append to `<wiki_root>/log.md`.
 - Recommend an initial SRS interval of 1-3 days for new material, in either tool.
 
 ---
