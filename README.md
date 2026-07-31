@@ -13,6 +13,7 @@ should be a schema file plus a plugin install, with no change to this repo.
 
 | Skill | Purpose |
 |---|---|
+| `lecture-digest` | Turn lecture videos plus slides into a layered digest that replaces watching, then hand off to `wiki_ingest`. Ships `fetch_transcript.py`. |
 | `wiki_ingest` | Add one source to the wiki: source page, entity/concept pages, index and log updates. |
 | `wiki_lint` | Health checks — orphans, dangling links, index drift, frontmatter and domain issues. Ships `lint.py`. |
 | `wiki_query` | Synthesise an answer across pages with citations, and file valuable output back. |
@@ -62,9 +63,15 @@ sources are copyright or the repo is public.
 
 ## Status
 
-Version 0.1.1 parameterises the skills against `.claude/wiki-schema.md` and moves the
-helper-script invocations to `${CLAUDE_PLUGIN_ROOT}`. Both wikis' conventions are now
-reachable through configuration, so neither needs a forked copy of the skills.
+Version 0.2.0 adds `lecture-digest`. Versions before it established the plugin and
+parameterised the original five skills against `.claude/wiki-schema.md`, so both wikis'
+conventions are reachable through configuration and neither needs a forked copy.
+
+`lecture-digest` branches on `source_policy`: under `archive-raw` it keeps fetched
+transcripts in the wiki as archived source material, and under `link-only` it fetches
+them to a scratch directory outside the repo and never commits them. A lecture
+transcript is closer to the source material than a summary is, so it falls under the
+same constraint as the slides.
 
 Pin consuming repos to a tag rather than tracking the default branch, so a mid-refactor
 skill never changes ingest behaviour under someone without warning.
