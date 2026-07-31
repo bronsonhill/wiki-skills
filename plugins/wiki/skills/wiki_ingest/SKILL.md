@@ -4,9 +4,12 @@ description: >
   Ingest a new source into a personal wiki. Use this skill whenever the user wants to
   add a source (lecture, paper, video, textbook chapter, external article) to the wiki,
   or says things like "ingest this", "add this to the wiki", "process this source", or
-  "file this". The skill writes the source page, then creates/updates entity and concept
-  pages, and refreshes the indexes and log. Always use this skill when a source needs to
-  be incorporated into the wiki — even if the user just says "read this and add it".
+  "file this". Handles acquisition too: for recordings it obtains a transcript first,
+  including fetching captions for YouTube-hosted video. It then writes the source page,
+  creates/updates entity and concept pages, and refreshes the indexes and log. Always
+  use this skill when a source needs to be incorporated into the wiki — even if the
+  user just says "read this and add it". To turn ingested material into a long-form
+  readable document, use `content-digest`, which calls this skill first.
 ---
 
 # Wiki Ingest
@@ -42,6 +45,13 @@ described more liberally, but still summarise rather than pasting long verbatim 
 If `.claude/wiki-schema.md` does not exist, say so and offer to create one before
 ingesting, rather than guessing at the wiki's conventions.
 
+## Bundled files
+
+- `scripts/fetch_transcript.py` — fetches YouTube captions as timestamp-anchored
+  markdown. Used only from Step 2, via `references/youtube.md`.
+- `references/youtube.md` — YouTube-specific transcript guidance. Read it only when the
+  source is actually on YouTube; there is nothing in it for other hosts.
+
 ---
 
 ## Ingest pipeline
@@ -64,7 +74,35 @@ the repo. Under `archive-raw`, copy it unmodified to `<wiki_root>/<raw_dir>/<slu
 so the original stays available for re-reading; keeping archived originals in their own
 directory rather than beside the `.md` pages keeps the Obsidian graph clean.
 
-### Step 2 — Read the source thoroughly
+### Step 2 — Obtain a transcript, if the source is a recording
+
+Skip this step for text sources. For a lecture recording, talk, or podcast, you need a
+transcript before you can read the source at all.
+
+Establish where the transcript is coming from:
+
+- **The user supplied one**, or the host provides a caption/transcript download — use it
+  as-is.
+- **The source is on YouTube** — read `references/youtube.md` and follow it. It covers
+  URL cleaning, the fetch script, and the auto-caption pitfalls that silently corrupt
+  word counts and timestamps.
+- **Any other host, with no transcript available** — say so and ask how the user wants
+  to proceed rather than guessing. Transcribing locally is an option but a slow one, and
+  it is their call.
+
+Where the transcript is written depends on `source_policy`. Under `archive-raw`, put it
+in `<wiki_root>/<raw_dir>/<slug>-transcripts` and keep it — it is archived source
+material like any other original. Under `link-only`, write it to a scratch directory
+outside the repo (`$TMPDIR/<slug>-transcripts` is fine) and do not commit it. A
+transcript is closer to the source material than a summary is, so under that policy it
+is exactly the artifact that must not land in the repo. What you write from it is
+original prose either way; the transcript is working material.
+
+Whatever the source, the slides or paper are ground truth for names, notation, and
+terminology. A transcript is a secondary record and is frequently wrong on exactly the
+technical terms that matter.
+
+### Step 3 — Read the source thoroughly
 
 Build a mental model of:
 - The main thesis or purpose
@@ -73,7 +111,7 @@ Build a mental model of:
 - Important claims, results, or worked examples worth preserving
 - Anything worth a short original quote (used sparingly, with attribution)
 
-### Step 3 — Write the source page
+### Step 4 — Write the source page
 
 Write `<wiki_root>/sources/<slug>.md`:
 
@@ -96,11 +134,11 @@ for a reader who hasn't seen the source. Under `link-only`, never copy its wordi
 
 ## Key concepts
 <List concepts central to this source, each linked: [[concept-name]]. Create stubs in
-Step 4 if the page doesn't exist yet — link to it anyway.>
+Step 5 if the page doesn't exist yet — link to it anyway.>
 
 ## Key entities
 <List entities central to this source (people, tools, models, papers cited), linked:
-[[entity-name]]. Create stubs in Step 4 if needed.>
+[[entity-name]]. Create stubs in Step 5 if needed.>
 
 ## Topics covered (revision checklist)
 <Exhaustive but concise bullet list of every topic/method/definition mentioned. This
@@ -114,7 +152,7 @@ Overview's depth, focus on completeness.>
 <Cross-references to other wiki pages this source relates to, extends, or contradicts.>
 ```
 
-### Step 4 — Update concept and entity pages
+### Step 5 — Update concept and entity pages
 
 After writing the source page, identify every concept and entity it introduces,
 defines, or meaningfully discusses.
@@ -196,7 +234,7 @@ block.>
 - [[sources/<slug>]] — <one-line note on what this source says about the concept>
 ```
 
-### Step 5 — Update the indexes
+### Step 6 — Update the indexes
 
 Under `index_style: per-section`, each of `<wiki_root>/sources/index.md`,
 `entities/index.md`, `concepts/index.md`, and `<derived_dir>/index.md` keeps its short
@@ -212,7 +250,7 @@ overwrite an existing catalog:
 - [[<slug>]] — <one-line description> | added: YYYY-MM-DD
 ```
 
-### Step 6 — Append to the log
+### Step 7 — Append to the log
 
 Append a single entry to `<wiki_root>/log.md` (create the file with a `# Wiki Log`
 header if it doesn't exist yet):
@@ -226,7 +264,7 @@ header if it doesn't exist yet):
 - **Updated pages:** <list or "none">
 ```
 
-### Step 7 — Run wiki_lint
+### Step 8 — Run wiki_lint
 
 Always invoke the `wiki_lint` skill after writing all pages
 (`python3 "${CLAUDE_PLUGIN_ROOT}/skills/wiki_lint/lint.py"`). Resolve any new dangling

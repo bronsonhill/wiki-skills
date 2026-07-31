@@ -13,8 +13,8 @@ should be a schema file plus a plugin install, with no change to this repo.
 
 | Skill | Purpose |
 |---|---|
-| `lecture-digest` | Turn lecture videos plus slides into a layered digest that replaces watching, then hand off to `wiki_ingest`. Ships `fetch_transcript.py`. |
-| `wiki_ingest` | Add one source to the wiki: source page, entity/concept pages, index and log updates. |
+| `wiki_ingest` | Bring one source into the wiki: acquisition (including transcript capture for recordings), source page, entity/concept pages, index and log updates. Ships `fetch_transcript.py`. |
+| `content-digest` | Turn ingested material into a layered digest built to be read instead of the original. Calls `wiki_ingest` first when handed new sources. |
 | `wiki_lint` | Health checks — orphans, dangling links, index drift, frontmatter and domain issues. Ships `lint.py`. |
 | `wiki_query` | Synthesise an answer across pages with citations, and file valuable output back. |
 | `cue-cards` | Generate spaced-repetition decks in Obsidian SR format, with an Anki TSV export. |
@@ -63,15 +63,24 @@ sources are copyright or the repo is public.
 
 ## Status
 
-Version 0.2.0 adds `lecture-digest`. Versions before it established the plugin and
-parameterised the original five skills against `.claude/wiki-schema.md`, so both wikis'
-conventions are reachable through configuration and neither needs a forked copy.
+Version 0.3.0 splits acquisition from presentation. `wiki_ingest` owns everything that
+brings material into the wiki, transcript capture included; `content-digest` (renamed
+from `lecture-digest`) owns turning that material into something readable, and calls
+`wiki_ingest` first when it is handed new sources.
 
-`lecture-digest` branches on `source_policy`: under `archive-raw` it keeps fetched
-transcripts in the wiki as archived source material, and under `link-only` it fetches
-them to a scratch directory outside the repo and never commits them. A lecture
-transcript is closer to the source material than a summary is, so it falls under the
-same constraint as the slides.
+That split is why YouTube is no longer baked into the digest workflow. Transcript
+acquisition is an ingest concern, and the YouTube-specific parts of it — URL cleaning,
+the caption-overlap dedupe, the mangled-terminology warnings — live in
+`wiki_ingest/references/youtube.md`, read only when a source is actually on YouTube.
+Sources on other hosts, or with a transcript already supplied, never load it.
+
+Transcript destination follows `source_policy`: kept in the wiki under `archive-raw`,
+written to a scratch directory outside the repo under `link-only`. A transcript is
+closer to the source material than a summary is, so it falls under the same constraint
+as the slides.
+
+Digests are written to `<derived_dir>`, not `sources/`. Ingest already writes one source
+page per source, and a second one would break the indexes and orphan checks.
 
 Pin consuming repos to a tag rather than tracking the default branch, so a mid-refactor
 skill never changes ingest behaviour under someone without warning.

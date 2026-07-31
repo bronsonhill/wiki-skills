@@ -1,7 +1,7 @@
 {
   "name": "wiki",
   "description": "Ingest, lint, query, and generate revision material from a personal wiki. Reads per-repo configuration from .claude/wiki-schema.md.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": {
     "name": "bronsonhill",
     "url": "https://github.com/bronsonhill"
