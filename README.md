@@ -13,10 +13,10 @@ should be a schema file plus a plugin install, with no change to this repo.
 
 | Skill | Purpose |
 |---|---|
-| `wiki_ingest` | Bring one source into the wiki: acquisition (including transcript capture for recordings), source page, entity/concept pages, index and log updates. Ships `fetch_transcript.py`. |
-| `content-digest` | Turn ingested material into a layered digest built to be read instead of the original. Calls `wiki_ingest` first when handed new sources. |
-| `wiki_lint` | Health checks — orphans, dangling links, index drift, frontmatter and domain issues. Ships `lint.py`. |
-| `wiki_query` | Synthesise an answer across pages with citations, and file valuable output back. |
+| `ingest` | Bring one source into the wiki: acquisition (including transcript capture for recordings), source page, entity/concept pages, index and log updates. Ships `fetch_transcript.py`. |
+| `content-digest` | Turn ingested material into a layered digest built to be read instead of the original. Calls `ingest` first when handed new sources. |
+| `lint` | Health checks — orphans, dangling links, index drift, frontmatter and domain issues. Ships `lint.py`. |
+| `query` | Synthesise an answer across pages with citations, and file valuable output back. |
 | `cue-cards` | Generate spaced-repetition decks in Obsidian SR format, with an Anki TSV export. |
 | `practice-exam` | Build a practice exam and answer key as typeset PDFs via LaTeX. |
 
@@ -63,15 +63,15 @@ sources are copyright or the repo is public.
 
 ## Status
 
-Version 0.3.0 splits acquisition from presentation. `wiki_ingest` owns everything that
+Version 0.3.0 splits acquisition from presentation. `ingest` owns everything that
 brings material into the wiki, transcript capture included; `content-digest` (renamed
 from `lecture-digest`) owns turning that material into something readable, and calls
-`wiki_ingest` first when it is handed new sources.
+`ingest` first when it is handed new sources.
 
 That split is why YouTube is no longer baked into the digest workflow. Transcript
 acquisition is an ingest concern, and the YouTube-specific parts of it — URL cleaning,
 the caption-overlap dedupe, the mangled-terminology warnings — live in
-`wiki_ingest/references/youtube.md`, read only when a source is actually on YouTube.
+`ingest/references/youtube.md`, read only when a source is actually on YouTube.
 Sources on other hosts, or with a transcript already supplied, never load it.
 
 Transcript destination follows `source_policy`: kept in the wiki under `archive-raw`,

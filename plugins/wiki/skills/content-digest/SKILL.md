@@ -3,7 +3,7 @@ name: content-digest
 description: >
   Turn wiki content into a layered, readable digest — a document engineered to be read
   instead of consuming the original, at 2–3x the speed, without losing fidelity. Works
-  from material already in the wiki; when given new sources it calls wiki_ingest first
+  from material already in the wiki; when given new sources it calls ingest first
   to bring them in. Use whenever the user wants notes, a digest, or "something I can
   read instead of watching/reading this". Strongest on lecture recordings plus their
   slides, but applies to papers, readings, and talks. Triggers on "digest these
@@ -18,13 +18,13 @@ Converts source material into a **layered digest**: a document engineered to be 
 anything that mattered.
 
 Paths and policies come from the consuming repo's `.claude/wiki-schema.md` — see the
-configuration table in `wiki_ingest`. This skill reads `wiki_root`, `derived_dir`, and
+configuration table in `ingest`. This skill reads `wiki_root`, `derived_dir`, and
 `domains`.
 
 ## Where this sits
 
 This skill does not acquire sources. Getting material into the wiki — downloading,
-transcribing recordings, writing the source page — is `wiki_ingest`'s job, and that
+transcribing recordings, writing the source page — is `ingest`'s job, and that
 includes transcript capture. This skill starts from what is already in the wiki and
 produces something readable from it.
 
@@ -32,7 +32,7 @@ So the first question is always whether the material is ingested yet:
 
 - **Already in the wiki** — go straight to Step 1.
 - **New sources supplied with the request** (video links, a paper, a deck) — invoke
-  `wiki_ingest` on them first, once per source, and let it finish. It will obtain any
+  `ingest` on them first, once per source, and let it finish. It will obtain any
   transcript, write the source page, and create the concept and entity pages. Then
   come back here.
 
@@ -86,7 +86,7 @@ kebab slug otherwise).
 A single lecture is often **several short videos** plus one deck. Ingest handles them as
 one source; digest them as one document.
 
-If a transcript exists, `wiki_ingest` will have told you where it put it — in the wiki
+If a transcript exists, `ingest` will have told you where it put it — in the wiki
 under `archive-raw`, or in a scratch directory under `link-only`. Read it from there.
 If the source page exists but the transcript has been cleaned up, ask rather than
 re-fetching; re-running acquisition is ingest's call, not this skill's.
@@ -123,7 +123,7 @@ recording. Hunt for it deliberately.
 ### Step 4 — Write the digest
 
 Write `<wiki_root>/<derived_dir>/<label>-<topic-kebab>-digest.md` following the template
-below, and link it back to the source page `wiki_ingest` created.
+below, and link it back to the source page `ingest` created.
 
 The digest is derived material, not a source page. Ingest already wrote one page per
 source; a digest is a second, longer document built from it, and giving each source two
@@ -136,9 +136,9 @@ authoritative on frontmatter for the derived section — re-read it if unsure.
 - Append to `<wiki_root>/log.md`: `## [YYYY-MM-DD] digest | <label> — <topic>`.
 - Cross-link: the digest links to `[[sources/<slug>]]` and to the concept pages ingest
   created; add a link back from the source page to the digest.
-- Run `wiki_lint` and resolve what it flags.
+- Run `lint` and resolve what it flags.
 
-Concept and entity extraction is not your job — `wiki_ingest` did it when the source was
+Concept and entity extraction is not your job — `ingest` did it when the source was
 brought in. If the digest surfaces concepts ingest missed, say so rather than silently
 creating pages; that is a signal the ingest was thin.
 
@@ -266,7 +266,7 @@ Before handing off, verify:
 - [ ] Topics-covered checklist accounts for every slide in the deck.
 - [ ] Formalism renders: `$…$` inline, `$$…$$` block, mermaid fenced.
 - [ ] The digest links to its source page, and the source page links back.
-- [ ] `wiki_lint` passes.
+- [ ] `lint` passes.
 
 **The test:** could the user skip the original entirely, read this, and lose nothing but
 time? If any part of the source exists only in the original, the digest has failed.

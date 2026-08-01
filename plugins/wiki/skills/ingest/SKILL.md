@@ -1,5 +1,5 @@
 ---
-name: wiki_ingest
+name: ingest
 description: >
   Ingest a new source into a personal wiki. Use this skill whenever the user wants to
   add a source (lecture, paper, video, textbook chapter, external article) to the wiki,
@@ -264,10 +264,10 @@ header if it doesn't exist yet):
 - **Updated pages:** <list or "none">
 ```
 
-### Step 8 — Run wiki_lint
+### Step 8 — Run lint
 
-Always invoke the `wiki_lint` skill after writing all pages
-(`python3 "${CLAUDE_PLUGIN_ROOT}/skills/wiki_lint/lint.py"`). Resolve any new dangling
+Always invoke the `lint` skill after writing all pages
+(`python3 "${CLAUDE_PLUGIN_ROOT}/skills/lint/lint.py"`). Resolve any new dangling
 links or index drift it reports before closing out the ingest. Append the lint result to
 `<wiki_root>/log.md` and write the full report to
 `<wiki_root>/lint-reports/<YYYY-MM-DD>.md`.

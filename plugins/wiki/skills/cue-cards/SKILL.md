@@ -21,7 +21,7 @@ in the wiki, wikilinks preserved) or Anki (`.tsv` import, wikilinks stripped sin
 Anki has no concept of them).
 
 Paths come from the consuming repo's `.claude/wiki-schema.md` — see the configuration
-table in `wiki_ingest`. This skill reads `wiki_root`, `derived_dir`, `domains`, and
+table in `ingest`. This skill reads `wiki_root`, `derived_dir`, `domains`, and
 `subject`.
 
 ## Step 1 — Select source material
@@ -124,7 +124,7 @@ End with a `## Deck notes` section explaining design choices, coverage, and why
 certain topics were prioritised or excluded.
 
 Cue-card decks intentionally have no YAML frontmatter (Obsidian Spaced Repetition
-convention) — `wiki_lint` exempts them from the frontmatter check.
+convention) — `lint` exempts them from the frontmatter check.
 
 ## Step 5 — Export to Anki
 

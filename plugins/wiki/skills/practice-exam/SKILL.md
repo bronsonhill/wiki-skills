@@ -16,7 +16,7 @@ is mimicked from example exam PDFs when the user supplies them. Output is a LaTe
 `.tex` using the `exam` document class, compiled to PDF by the driver.
 
 Paths and naming come from the consuming repo's `.claude/wiki-schema.md` — see the
-configuration table in `wiki_ingest`. This skill reads `wiki_root`, `derived_dir`,
+configuration table in `ingest`. This skill reads `wiki_root`, `derived_dir`,
 `domains`, `subject`, and `source_policy`. When `domains` is configured, draw questions
 only from pages whose `domain` matches the requested subject.
 

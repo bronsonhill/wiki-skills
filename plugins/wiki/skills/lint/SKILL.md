@@ -1,5 +1,5 @@
 ---
-name: wiki_lint
+name: lint
 description: Performs health checks on a personal wiki — contradictions, stale claims, orphans, dangling links, index drift, frontmatter and domain issues. Suggests fixes and new sources/questions.
 ---
 
@@ -8,7 +8,7 @@ description: Performs health checks on a personal wiki — contradictions, stale
 Keeps the wiki healthy and compounding as it grows.
 
 Paths and policies come from the consuming repo's `.claude/wiki-schema.md` — see the
-configuration table in `wiki_ingest` for the full set of keys. This skill reads
+configuration table in `ingest` for the full set of keys. This skill reads
 `wiki_root`, `derived_dir`, `index_style`, `domains`, and `source_policy`.
 
 ## Instructions
@@ -16,7 +16,7 @@ configuration table in `wiki_ingest` for the full set of keys. This skill reads
 ### 1. Run the deterministic checks first
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/wiki_lint/lint.py"
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/lint/lint.py"
 ```
 
 The script reads the schema itself, so it needs no arguments when run from anywhere
@@ -63,5 +63,5 @@ It exits non-zero if any issues are found, so it works in scripts and PR checks.
 
 - Enforce consistency with `.claude/wiki-schema.md`. The script encodes the frontmatter
   rules — update both together when the schema evolves.
-- Run after every `wiki_ingest`, and periodically (weekly, or as part of PR review) as
+- Run after every `ingest`, and periodically (weekly, or as part of PR review) as
   the wiki grows with multiple contributors.

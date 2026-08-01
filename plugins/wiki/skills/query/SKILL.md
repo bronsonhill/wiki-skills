@@ -1,5 +1,5 @@
 ---
-name: wiki_query
+name: query
 description: Queries a personal wiki for answers, synthesizing across pages with citations. Files valuable outputs back as new pages. Uses the wiki index first for navigation.
 ---
 
@@ -9,7 +9,7 @@ Enables synthesis over the persistent wiki instead of raw RAG or re-reading sour
 material from scratch each time.
 
 Paths come from the consuming repo's `.claude/wiki-schema.md` — see the configuration
-table in `wiki_ingest`. This skill reads `wiki_root`, `derived_dir`, `index_style`, and
+table in `ingest`. This skill reads `wiki_root`, `derived_dir`, `index_style`, and
 `domains`.
 
 ## Instructions
@@ -49,4 +49,4 @@ table in `wiki_ingest`. This skill reads `wiki_root`, `derived_dir`, `index_styl
 ### 5. Health
 
 - If the query surfaces a gap (a concept mentioned nowhere, a stale/contradicted
-  claim), flag it and suggest running `wiki_lint` or ingesting a new source.
+  claim), flag it and suggest running `lint` or ingesting a new source.

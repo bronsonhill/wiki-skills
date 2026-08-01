@@ -15,7 +15,7 @@ treat them as one source, not one source per video.
 ## Fetch
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/wiki_ingest/scripts/fetch_transcript.py" \
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/ingest/scripts/fetch_transcript.py" \
   "<url>" "<url>" ... --out-dir <transcript-dir>
 ```
 

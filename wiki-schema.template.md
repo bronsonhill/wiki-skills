@@ -15,7 +15,7 @@ git_workflow: none
 
 Copy this file to `.claude/wiki-schema.md` in a repo that consumes the `wiki` plugin,
 then edit the frontmatter. The frontmatter is the machine-readable half — every skill
-in the plugin reads it, and `wiki_lint/lint.py` parses it directly. The prose below is
+in the plugin reads it, and `lint/lint.py` parses it directly. The prose below is
 for humans and for the agent's judgement calls.
 
 ## Configuration keys
@@ -41,7 +41,7 @@ for humans and for the agent's judgement calls.
 ├── entities/         # people, models, tools, papers, software
 ├── concepts/         # ideas, mechanisms, algorithms
 ├── <derived_dir>/    # worked examples, syntheses, revision material
-└── lint-reports/     # frozen wiki_lint snapshots
+└── lint-reports/     # frozen lint snapshots
 ```
 
 ## Page conventions
@@ -64,10 +64,10 @@ for humans and for the agent's judgement calls.
 - **Images:** only original diagrams or images you have rights to use. Store under
   `<wiki_root>/<derived_dir>/assets/`.
 - **Cue-card decks** intentionally omit frontmatter, following the Obsidian Spaced
-  Repetition convention. `wiki_lint` exempts them.
+  Repetition convention. `lint` exempts them.
 
 ## Schema evolution
 
 Update this file when conventions change. A schema change that implies a script change
-should land alongside it — `wiki_lint/lint.py` encodes the frontmatter rules, so a
+should land alongside it — `lint/lint.py` encodes the frontmatter rules, so a
 schema edit without a matching script edit is silent.
