@@ -21,6 +21,8 @@ from pathlib import Path
 WIKILINK_RE = re.compile(r"\[\[([^\]\|#]+)(?:#[^\]\|]+)?(?:\|([^\]]+))?\]\]")
 TAG_RE = re.compile(r"#card/[\w-]+")
 DECK_HEADER_RE = re.compile(r"^#flashcards/([\w-]+)", re.MULTILINE)
+# the Obsidian SR plugin's inline review state — never part of the card
+SR_RE = re.compile(r"^\s*<!--SR:.*-->\s*$")
 
 
 def strip_wikilinks(text: str) -> str:
@@ -50,21 +52,24 @@ def parse_deck(text: str) -> tuple[str, list[tuple[str, str, str]]]:
         if section == "deck-notes":
             continue
 
-        # Cards are separated by a lone "?" line.
-        parts = re.split(r"\n\?\n", block)
-        for i in range(len(parts) - 1):
-            question = parts[i].strip()
-            # Drop any leading blank lines / stray heading remnants.
-            question = question.lstrip("\n").strip()
-            if not question:
+        # One card per blank-line-separated block: the question, a lone "?",
+        # then the answer. Splitting on "?" alone cannot find the end of an
+        # answer, and runs each card into the question that follows it.
+        for card_block in re.split(r"\n\s*\n", block):
+            lines = card_block.strip("\n").split("\n")
+            try:
+                sep = next(i for i, l in enumerate(lines) if l.strip() == "?")
+            except StopIteration:
                 continue
-            answer_block = parts[i + 1]
-            # Answer runs until the next question would start (blank line then
-            # non-empty line without a following lone "?") — simplest robust rule:
-            # take the answer up to the next blank-line-separated paragraph break
-            # if a tag line signals the end, otherwise the whole remainder up to
-            # the next question boundary (already split by parts).
-            answer = answer_block.strip()
+            if sep == 0 or sep == len(lines) - 1:
+                continue
+
+            question = "\n".join(lines[:sep]).strip()
+            answer_lines = [l for l in lines[sep + 1:] if not SR_RE.match(l)]
+            answer = "\n".join(answer_lines).strip()
+            if not question or not answer:
+                continue
+
             tags_found = TAG_RE.findall(answer)
             tags = " ".join(tags_found) if tags_found else f"card::{deck_name}"
             front = to_html_field(question)
