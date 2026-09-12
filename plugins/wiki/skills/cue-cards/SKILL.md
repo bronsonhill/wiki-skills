@@ -135,12 +135,13 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/cue-cards/scripts/to_anki_tsv.py" \
   <wiki_root>/<derived_dir>/<topic>-cue-cards.md
 ```
 
-This writes `<topic>-cue-cards.anki.tsv` next to it — a
-tab-separated `Front\tBack\tTags` file with wikilinks stripped to plain text and
-answer newlines converted to `<br>` (Anki fields are HTML). To import in Anki:
-**File → Import**, select the `.tsv`, map the three columns to Front/Back/Tags, and
-set the field separator to Tab. The `.tsv` is gitignored (`*.anki.tsv`) — it's a
-personal, regenerable artifact, not wiki content.
+This writes `<topic>-cue-cards.anki.tsv` next to it — a `#separator:tab / #html:true /
+#tags column:3` header followed by a tab-separated `Front\tBack\tTags` row per card,
+with wikilinks stripped to plain text and answer newlines converted to `<br>` (Anki
+fields are HTML). To import in Anki: **File → Import**, select the `.tsv` — the
+header lines tell Anki the separator, that fields are HTML, and that column 3 is
+tags, so no manual column mapping is needed. The `.tsv` is gitignored
+(`*.anki.tsv`) — it's a personal, regenerable artifact, not wiki content.
 
 Mention the export file exists in your debrief so the user knows to import it if they
 use Anki instead of Obsidian.
