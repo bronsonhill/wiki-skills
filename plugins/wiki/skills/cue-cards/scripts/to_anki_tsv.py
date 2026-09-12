@@ -37,6 +37,9 @@ def to_html_field(text: str) -> str:
     return text.replace("\n", "<br>").replace("\t", " ")
 
 
+# A line holding tags and nothing else ends the card's answer. Without that
+# boundary an answer swallows the following card, which is how every export
+# before this rule bled card N into card N+1 (see tests/test_to_anki_tsv.py).
 TAG_LINE_RE = re.compile(r"^(?:#card/[\w-]+\s*)+$")
 
 

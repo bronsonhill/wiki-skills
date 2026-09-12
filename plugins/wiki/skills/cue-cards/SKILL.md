@@ -119,6 +119,10 @@ Answer text here (can span multiple sentences or include numbered lists).
 #card/<subject> #card/<topic>
 ```
 
+Give each card its own tag line, containing tags and nothing else. The Anki export
+in Step 5 reads that line as the end of the answer, so an answer may span blank lines
+and lists, but tags appended to the end of an answer sentence are not exported.
+
 ### Deck notes
 End with a `## Deck notes` section explaining design choices, coverage, and why
 certain topics were prioritised or excluded.
