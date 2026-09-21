@@ -4,12 +4,14 @@
 Usage:
     python3 to_anki_tsv.py <path-to>/<topic>-cue-cards.md
 
-Writes `<deck>.anki.tsv` next to the input file: three tab-separated columns
-(Front, Back, Tags), one row per card. Wikilinks are stripped to their display
-text and answer newlines become `<br>` since Anki fields are HTML.
+Writes `<deck>.anki.tsv` next to the input file: a `#separator:tab / #html:true /
+#tags column:3` header followed by three tab-separated columns (Front, Back,
+Tags), one row per card. Wikilinks are stripped to their display text and
+answer newlines become `<br>` since Anki fields are HTML.
 
-Anki import: File -> Import, pick the .tsv, set field separator to Tab, map
-columns to Front / Back / Tags.
+Anki import: File -> Import, pick the .tsv. The header lines tell Anki the
+separator, that fields are HTML, and that column 3 is tags, so no manual
+column mapping is needed.
 """
 
 from __future__ import annotations
@@ -35,6 +37,12 @@ def to_html_field(text: str) -> str:
     return text.replace("\n", "<br>").replace("\t", " ")
 
 
+# A line holding tags and nothing else ends the card's answer. Without that
+# boundary an answer swallows the following card, which is how every export
+# before this rule bled card N into card N+1 (see tests/test_to_anki_tsv.py).
+TAG_LINE_RE = re.compile(r"^(?:#card/[\w-]+\s*)+$")
+
+
 def parse_deck(text: str) -> tuple[str, list[tuple[str, str, str]]]:
     deck_match = DECK_HEADER_RE.search(text)
     deck_name = deck_match.group(1) if deck_match else "deck"
@@ -50,23 +58,36 @@ def parse_deck(text: str) -> tuple[str, list[tuple[str, str, str]]]:
         if section == "deck-notes":
             continue
 
-        # Cards are separated by a lone "?" line.
-        parts = re.split(r"\n\?\n", block)
-        for i in range(len(parts) - 1):
-            question = parts[i].strip()
-            # Drop any leading blank lines / stray heading remnants.
-            question = question.lstrip("\n").strip()
-            if not question:
-                continue
-            answer_block = parts[i + 1]
-            # Answer runs until the next question would start (blank line then
-            # non-empty line without a following lone "?") — simplest robust rule:
-            # take the answer up to the next blank-line-separated paragraph break
-            # if a tag line signals the end, otherwise the whole remainder up to
-            # the next question boundary (already split by parts).
-            answer = answer_block.strip()
-            tags_found = TAG_RE.findall(answer)
-            tags = " ".join(tags_found) if tags_found else f"card::{deck_name}"
+        lines = block.split("\n")
+        qpositions = [i for i, line in enumerate(lines) if line.strip() == "?"]
+
+        def question_start(qpos: int) -> int:
+            # Contiguous run of non-blank lines immediately above the "?".
+            start = qpos
+            j = qpos - 1
+            while j >= 0 and lines[j].strip():
+                start = j
+                j -= 1
+            return start
+
+        starts = [question_start(qpos) for qpos in qpositions]
+
+        for idx, qpos in enumerate(qpositions):
+            question = "\n".join(lines[starts[idx]:qpos]).strip()
+            # Default answer end: right before the next question's own
+            # non-blank run (used when no tag line separates them).
+            next_start = starts[idx + 1] if idx + 1 < len(qpositions) else len(lines)
+            search_end = qpositions[idx + 1] if idx + 1 < len(qpositions) else len(lines)
+            tags = ""
+            answer_end = next_start
+            for k in range(qpos + 1, search_end):
+                if TAG_LINE_RE.match(lines[k].strip()):
+                    tags = " ".join(TAG_RE.findall(lines[k]))
+                    answer_end = k
+                    break
+            answer = "\n".join(lines[qpos + 1:answer_end]).strip()
+            if not tags:
+                tags = f"card::{deck_name}"
             front = to_html_field(question)
             back = to_html_field(answer)
             if front and back:
@@ -89,6 +110,9 @@ def main() -> int:
 
     out_path = src.with_suffix("").with_suffix(".anki.tsv")
     with out_path.open("w", encoding="utf-8") as f:
+        f.write("#separator:tab\n")
+        f.write("#html:true\n")
+        f.write("#tags column:3\n")
         for front, back, tags in cards:
             f.write(f"{front}\t{back}\t{tags}\n")
 
