@@ -1,52 +1,59 @@
 ---
 name: query
-description: Queries a personal wiki for answers, synthesizing across pages with citations. Files valuable outputs back as new pages. Uses the wiki index first for navigation.
+description: >
+  Answer questions from a personal wiki by synthesising across its pages, with a
+  citation for every claim, and file useful answers back as new pages. Use when the
+  user asks something the wiki should be able to answer ("what does the wiki say about
+  X", "compare X and Y", "summarise what we have on Z"), or wants a comparison or
+  revision summary built from existing pages. Navigates from the wiki index first.
 ---
 
 # Wiki Query
 
-Enables synthesis over the persistent wiki instead of raw RAG or re-reading source
-material from scratch each time.
+Answer questions from the wiki's existing pages instead of rereading the original
+sources or searching raw files. The wiki already holds summaries, definitions and
+cross-links; build the answer from those.
 
-Paths come from the consuming repo's `.claude/wiki-schema.md` — see the configuration
-table in `ingest`. This skill reads `wiki_root`, `derived_dir`, `index_style`, and
+Paths come from the consuming repo's `.claude/wiki-schema.md` (the configuration table
+is in `ingest`). This skill reads `wiki_root`, `derived_dir`, `index_style` and
 `domains`.
 
 ## Instructions
 
-### 1. Search
+### 1. Find the pages
 
-- Read `<wiki_root>/index.md` first. Under `index_style: per-section`, follow it into
-  the relevant section index (`concepts/index.md`, etc.) to identify candidate pages.
-- Grep for keywords across the wiki if the index doesn't surface enough.
-- Drill into specific source/entity/concept/`<derived_dir>` pages.
-- When `domains` is configured and the question is about one subject, filter to pages
-  whose frontmatter `domain` matches. Cross-domain questions are fine — the graph is
-  shared on purpose — but say when you are crossing a boundary.
-
-### 2. Synthesize
-
-- Combine information across pages, note contradictions explicitly if any exist.
-- Answer with wikilinks/citations back to the pages used — every non-trivial claim
-  should be traceable to a `[[sources/...]]` or `[[concepts/...]]` page.
-- Output formats: markdown summary, table, or (for revision) a `<derived_dir>/` page.
-
-### 3. File back
-
-- If the synthesis is genuinely valuable (a new comparison, a worked derivation, an
-  exam-relevant summary), save it as a new page under `<wiki_root>/<derived_dir>/`.
-- Update the relevant `index.md` and append to `<wiki_root>/log.md`:
-  `## [YYYY-MM-DD] query | <topic>`.
-- Add cross-references from/to the concept and entity pages involved.
-
-### 4. Schema
-
-- Respect `.claude/wiki-schema.md` conventions, including required frontmatter on any
-  new page, and set `domain` when the wiki uses it.
-- Where frontmatter supports it, Dataview queries are a fast way to scope a search, e.g.
+- Start at `<wiki_root>/index.md`. Under `index_style: per-section`, follow it into the
+  relevant section index (`concepts/index.md`, etc.) to find candidate pages.
+- If the index turns up too little, grep the wiki for keywords.
+- Read the candidate source, entity, concept and `<derived_dir>` pages in full.
+- When `domains` is set and the question concerns one subject, restrict the search to
+  pages whose `domain` matches. Cross-domain answers are allowed, since the graph is
+  shared on purpose, but tell the user when an answer draws on another domain.
+- Where pages have frontmatter, a Dataview query narrows the search quickly, e.g.
   `TABLE type FROM "concepts" WHERE contains(domain, "academic/nlp")`.
 
-### 5. Health
+### 2. Write the answer
 
-- If the query surfaces a gap (a concept mentioned nowhere, a stale/contradicted
-  claim), flag it and suggest running `lint` or ingesting a new source.
+- Combine what the pages say. When two pages disagree, name both pages and state what
+  each claims.
+- Cite as you go: every non-trivial claim links to the `[[sources/...]]` or
+  `[[concepts/...]]` page it came from.
+- Pick the format the question calls for: prose, a table, or, for revision, a
+  `<derived_dir>/` page.
+
+### 3. File it back
+
+- Save the answer as a new page under `<wiki_root>/<derived_dir>/` when someone would
+  want to find it again: a comparison no existing page makes, a worked derivation, an
+  exam-focused summary. One-off lookups don't need a page.
+- Give the new page the frontmatter `.claude/wiki-schema.md` requires, including
+  `domain` when the wiki uses it.
+- Update the relevant `index.md` and append to `<wiki_root>/log.md`:
+  `## [YYYY-MM-DD] query | <topic>`.
+- Link the new page from the concept and entity pages it draws on, and link back.
+
+### 4. Report gaps
+
+- If the question exposes a gap (a concept with no page, a claim that looks stale or
+  that another page contradicts), tell the user and suggest running `lint` or ingesting
+  a source that covers it.

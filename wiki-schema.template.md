@@ -14,22 +14,22 @@ git_workflow: none
 # Wiki Schema
 
 Copy this file to `.claude/wiki-schema.md` in a repo that consumes the `wiki` plugin,
-then edit the frontmatter. The frontmatter is the machine-readable half — every skill
-in the plugin reads it, and `lint/lint.py` parses it directly. The prose below is
-for humans and for the agent's judgement calls.
+then edit the frontmatter. Every skill in the plugin reads the frontmatter, and
+`lint/lint.py` parses it directly. The prose below is for people, and for the agent
+when a convention calls for judgement.
 
 ## Configuration keys
 
 | Key | Values | Meaning |
 |---|---|---|
 | `wiki_root` | path | Root directory of the vault, relative to the repo root. |
-| `source_policy` | `link-only` \| `archive-raw` | `link-only` records a URL and an original summary and never copies the source into the repo. Use it when sources are copyright or the repo is public or shared. `archive-raw` also copies the original into `raw_dir`. |
-| `raw_dir` | path | Where archived originals live, relative to `wiki_root`. Only meaningful under `archive-raw`. |
-| `derived_dir` | dirname | Section holding worked examples, syntheses, cue-card decks, and revision material. |
-| `index_style` | `per-section` \| `root-only` | Whether each section keeps its own `index.md` alongside a root catalog, or everything is cataloged in one root `index.md`. |
-| `domains` | list | Allowed top-level `domain` values. Leave empty for a single-subject wiki, in which case pages carry no `domain` field and the lint's domain checks are skipped. |
-| `subject` | string | Display name, used in page prose, card tags, and generated exam papers. |
-| `git_workflow` | `pr` \| `direct` \| `none` | How ingests reach version control. `none` for a wiki that isn't a git repo. |
+| `source_policy` | `link-only` \| `archive-raw` | `link-only` records a URL and an original summary and never copies the source into the repo. Use it when sources are under copyright or the repo is public or shared. `archive-raw` also copies the original into `raw_dir`. |
+| `raw_dir` | path | Where archived originals live, relative to `wiki_root`. Used only under `archive-raw`. |
+| `derived_dir` | dirname | Section for worked examples, syntheses, cue-card decks and other revision material. |
+| `index_style` | `per-section` \| `root-only` | `per-section` gives each section its own `index.md` plus a root catalog; `root-only` catalogs everything in one root `index.md`. |
+| `domains` | list | Allowed top-level `domain` values. Leave empty for a single-subject wiki; pages then carry no `domain` field and lint skips its domain checks. |
+| `subject` | string | Display name, used in page prose, card tags and generated exam papers. |
+| `git_workflow` | `pr` \| `direct` \| `none` | How ingests reach version control. Use `none` for a wiki that isn't a git repo. |
 
 ## Directory structure
 
@@ -58,16 +58,17 @@ for humans and for the agent's judgement calls.
   ---
   ```
   `source` pages also carry `link: <url>`.
-- **Wikilinks:** `[[page-name]]` for all cross-references, bidirectional where possible.
-- **Citations:** claims on concept, entity, and derived pages should link back to the
+- **Wikilinks:** `[[page-name]]` for all cross-references, in both directions where
+  possible.
+- **Citations:** claims on concept, entity and derived pages link back to the
   `[[sources/xxx]]` page they came from.
-- **Images:** only original diagrams or images you have rights to use. Store under
+- **Images:** only original diagrams, or images you have the rights to. Store them under
   `<wiki_root>/<derived_dir>/assets/`.
-- **Cue-card decks** intentionally omit frontmatter, following the Obsidian Spaced
-  Repetition convention. `lint` exempts them.
+- **Cue-card decks** have no frontmatter, following the Obsidian Spaced Repetition
+  convention. `lint` skips them.
 
 ## Schema evolution
 
-Update this file when conventions change. A schema change that implies a script change
-should land alongside it — `lint/lint.py` encodes the frontmatter rules, so a
-schema edit without a matching script edit is silent.
+Update this file when conventions change. `lint/lint.py` encodes the frontmatter rules,
+so change the script in the same commit as the schema. If only the schema changes, lint
+keeps checking the old rules and reports nothing wrong.

@@ -1,59 +1,53 @@
 ---
 name: cue-cards
 description: >
-  Generate high-quality, spaced-repetition-ready cue cards from a personal wiki.
-  Use this skill when the user wants flashcards for revision from any content page
-  (source, concept, entity, or derived material). Cards follow cognitive
-  science principles (elaborative interrogation, desirable difficulty, contrast,
-  failure modes) and are produced in a tool-agnostic canonical format, then rendered
-  to both the Obsidian Spaced Repetition plugin format and an Anki-importable TSV
-  export — so cards work whichever SRS tool the contributor or reader uses. Trigger
-  on phrases like "make cue cards", "generate flashcards", "quiz me on", "revision
-  cards for", "export to anki", or "turn this page into cards".
+  Generate spaced-repetition cue cards from a personal wiki page (source, concept,
+  entity or derived material). Cards test reasoning (why something holds, how a
+  mechanism runs, how two ideas differ, what breaks) in preference to bare definitions.
+  They are written once in Obsidian Spaced Repetition format and exported to an
+  Anki-importable TSV, so they work in either tool. Use when the user says "make cue
+  cards", "generate flashcards", "quiz me on", "revision cards for", "export to anki",
+  "turn this page into cards", or otherwise wants flashcards from wiki content.
 ---
 
 # Cue Card Generator
 
-Creates cue cards optimised for long-term retention and genuine understanding from
-the wiki. The card *content* is tool-agnostic; two renderers turn it into whatever
-format the reader's SRS tool needs — Obsidian Spaced Repetition (native `.md`, lives
-in the wiki, wikilinks preserved) or Anki (`.tsv` import, wikilinks stripped since
-Anki has no concept of them).
+Writes cue cards from wiki pages for long-term retention. You write the card content
+once, as an Obsidian Spaced Repetition deck (native `.md` in the wiki, wikilinks kept).
+That deck is the source of truth, and a script converts it to an Anki import (`.tsv`,
+wikilinks stripped because Anki has no equivalent).
 
-Paths come from the consuming repo's `.claude/wiki-schema.md` — see the configuration
-table in `ingest`. This skill reads `wiki_root`, `derived_dir`, `domains`, and
-`subject`.
+Paths come from the consuming repo's `.claude/wiki-schema.md` (the configuration table
+is in `ingest`). This skill reads `wiki_root`, `derived_dir`, `domains` and `subject`.
 
-## Step 1 — Select source material
+## Step 1: Select source material
 
-Read the target content page(s) thoroughly:
-- Source pages → focus on pipeline stages, motivations, results
-- Concept pages → focus on definitions, mechanisms, trade-offs, relationships
-- Entity pages → focus on what it is, why it matters, how it relates to concepts
-- Material pages → focus on comparisons, timelines, cross-cutting themes
+Read the target page(s) in full. What to draw from each page type:
+- Source pages: pipeline stages, motivations, results
+- Concept pages: definitions, mechanisms, trade-offs, relationships
+- Entity pages: what it is, why it matters, which concepts it connects to
+- Material pages: comparisons, timelines, themes that span several sources
 
-Identify 8-15 high-value cards per page. Prioritise material that is:
-- Frequently confused
-- Has an important "why" explanation
-- Involves a sequence or decision point
-- Represents a common exam/revision pitfall
+Aim for 8–15 cards per page. Favour material that students confuse with something
+else, that has a "why" worth knowing, that involves a sequence or a decision point, or
+that is a common exam mistake.
 
-## Step 2 — Choose card type
+## Step 2: Choose card types
 
-### Elaborative Interrogation (most common)
-"Why is this true?" or "Why does this design choice exist?"
+### Elaborative interrogation (most common)
+"Why is this true?" or "Why was it designed this way?"
 
 ```
 Why does a cellular automaton's next state depend only on a local neighbourhood rather than the whole grid?
 ?
-Locality keeps the update rule computationally tractable and lets complex global behaviour emerge from simple local interactions — the defining feature of emergence in ABMs, rather than being explicitly programmed.
+Locality keeps each update cheap to compute, yet complex global patterns still arise from simple local interactions. That is emergence: the global behaviour is never programmed directly.
 ```
 
 ### Mechanism cards
-Trace a process from start to finish with clear boundaries.
+Trace a process from a defined start to a defined end.
 
 ```
-Starting from an initial population and ending at a steady state, what are the update steps of Conway's Game of Life on each tick?
+Given the current generation, what steps does Conway's Game of Life apply to produce the next one?
 ?
 1. For each cell, count live neighbours in its 8-cell neighbourhood.
 2. A live cell with 2-3 live neighbours survives; otherwise it dies.
@@ -62,7 +56,7 @@ Starting from an initial population and ending at a steady state, what are the u
 ```
 
 ### Contrast cards
-Compare two similar but importantly different concepts.
+Separate two concepts that look alike but differ in an important way.
 
 ```
 What is the key difference between agent-based modelling and system dynamics modelling?
@@ -76,28 +70,27 @@ ABM simulates individual agents with local rules and lets aggregate behaviour em
 ```
 What happens if a cellular automaton is updated asynchronously (cell-by-cell) instead of synchronously, without accounting for it in the rule design?
 ?
-The next state calculation for one cell may read already-updated neighbours from the same tick, coupling update order to the outcome. Patterns that assume simultaneous updates (e.g. Game of Life gliders) break or behave unpredictably.
+A cell's next state may be computed from neighbours that were already updated in the same tick, so the order of updates changes the outcome. Patterns that assume simultaneous updates (e.g. Game of Life gliders) break or behave unpredictably.
 ```
 
-## Step 3 — Quality rules
+## Step 3: Quality rules
 
-- **No definition-only cards.** Convert "What is X?" into an elaborative or contrast
+- **No definition-only cards.** Turn "What is X?" into an elaborative or contrast
   question.
-- **Embed the phenomenon.** Start with a concrete situation before asking for the
-  cause.
-- **One idea per card.** Split complex topics into multiple focused cards.
-- **Wikilinks are fine in the canonical/Obsidian form** (e.g. `[[cellular-automaton]]`)
-  but keep each card self-contained — a reader shouldn't need to follow the link to
-  answer it.
-- **Keep answers concise but complete.** 2-5 sentences max, quickly self-verifiable.
-- **Tag every card** in the format `#card/<subject> #card/<topic>`, taking `<subject>`
-  from the schema's `subject` key (kebab-cased), so decks can be filtered.
+- **Lead with the phenomenon.** Describe a concrete situation, then ask for its cause.
+- **One idea per card.** Split a complex topic into several focused cards.
+- **Wikilinks are allowed in the Obsidian deck** (e.g. `[[cellular-automaton]]`), but
+  each card must be answerable without following the link.
+- **Keep answers to 2–5 sentences**, short enough that the reader can check their
+  recall against them at a glance.
+- **Tag every card** as `#card/<subject> #card/<topic>`, taking `<subject>` from the
+  schema's `subject` key (kebab-cased), so decks can be filtered.
 
-## Step 4 — Write the canonical deck (Obsidian Spaced Repetition format)
+## Step 4: Write the deck (Obsidian Spaced Repetition format)
 
-Output cards grouped under standard section headers, in a single
-`<wiki_root>/<derived_dir>/<topic>-cue-cards.md` file. This is the source of truth; the Anki
-export in Step 5 is generated from it.
+Write all cards to one file, `<wiki_root>/<derived_dir>/<topic>-cue-cards.md`, grouped
+under the section headers below. This file is the source of truth; Step 5 generates
+the Anki export from it.
 
 ### Deck header
 ```markdown
@@ -119,18 +112,18 @@ Answer text here (can span multiple sentences or include numbered lists).
 #card/<subject> #card/<topic>
 ```
 
-Give each card its own tag line, containing tags and nothing else. The Anki export
-in Step 5 reads that line as the end of the answer, so an answer may span blank lines
-and lists, but tags appended to the end of an answer sentence are not exported.
+Give each card its own tag line, holding tags and nothing else. The Anki export in
+Step 5 treats that line as the end of the answer. An answer may therefore span blank
+lines and lists, but tags appended to the end of an answer sentence are not exported.
 
 ### Deck notes
-End with a `## Deck notes` section explaining design choices, coverage, and why
-certain topics were prioritised or excluded.
+End with a `## Deck notes` section covering coverage, design choices, and why you
+prioritised or left out particular topics.
 
-Cue-card decks intentionally have no YAML frontmatter (Obsidian Spaced Repetition
-convention) — `lint` exempts them from the frontmatter check.
+Decks have no YAML frontmatter, following the Obsidian Spaced Repetition convention.
+`lint` skips them in its frontmatter check.
 
-## Step 5 — Export to Anki
+## Step 5: Export to Anki
 
 Run the converter on the deck you just wrote:
 
@@ -139,51 +132,43 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/cue-cards/scripts/to_anki_tsv.py" \
   <wiki_root>/<derived_dir>/<topic>-cue-cards.md
 ```
 
-This writes `<topic>-cue-cards.anki.tsv` next to it — a `#separator:tab / #html:true /
-#tags column:3` header followed by a tab-separated `Front\tBack\tTags` row per card,
-with wikilinks stripped to plain text and answer newlines converted to `<br>` (Anki
-fields are HTML). To import in Anki: **File → Import**, select the `.tsv` — the
-header lines tell Anki the separator, that fields are HTML, and that column 3 is
-tags, so no manual column mapping is needed. The `.tsv` is gitignored
-(`*.anki.tsv`) — it's a personal, regenerable artifact, not wiki content.
+It writes `<topic>-cue-cards.anki.tsv` next to the deck. The file starts with a
+`#separator:tab / #html:true / #tags column:3` header, then has one tab-separated
+`Front\tBack\tTags` row per card. Wikilinks become plain text, and answer newlines
+become `<br>` because Anki fields are HTML.
 
-Mention the export file exists in your debrief so the user knows to import it if they
-use Anki instead of Obsidian.
+To import, the user picks **File → Import** in Anki and selects the `.tsv`. The header
+tells Anki the separator, that fields are HTML and that column 3 holds tags, so no
+column mapping is needed. Keep the `.tsv` out of git (`*.anki.tsv` in `.gitignore`):
+it's personal, and the script can regenerate it at any time.
 
-### Don't let personal review state pollute the shared deck
+Mention the export file in your debrief so users on Anki know to import it.
+
+### Keep review state out of the shared deck
 
 The Obsidian Spaced Repetition plugin writes its scheduling state
-(`<!--SR:!YYYY-MM-DD,interval,ease-->`) as an inline comment directly under each
-card, inside the tracked `.md` file. Where the wiki is shared, that turns
-every personal review session into a git diff full of someone else's progress data
-on a shared file. Never commit those comments, and don't strip-then-recommit them
-as a normal workflow either — prevent them from landing in the first place:
+(`<!--SR:!YYYY-MM-DD,interval,ease-->`) as an HTML comment under each card, inside the
+tracked `.md` file. In a shared wiki, every review session then shows up as a git diff
+carrying one person's progress data. Never commit those comments. Stripping them before
+each commit isn't a workable routine either; stop them reaching the tracked file at all:
 
-- **Recommend Anki for personal review by default.** Its review state lives in
-  Anki's own local collection (outside the repo entirely), so reviewing there
-  never touches the tracked deck.
-- **If someone wants to review in Obsidian against this vault**, they should mark
-  the deck file `--skip-worktree` in their local clone first, so the plugin's
-  inline writes stay local and invisible to `git status`/`diff`:
+- **Recommend Anki for personal review by default.** Anki keeps review state in its own
+  local collection, outside the repo, so reviewing there never touches the deck file.
+- **To review in Obsidian against this vault**, the user marks the deck file
+  `--skip-worktree` in their local clone first, which hides the plugin's inline writes
+  from `git status` and `git diff`:
   ```bash
   git update-index --skip-worktree <wiki_root>/<derived_dir>/<topic>-cue-cards.md
   ```
-  This is a local-only, per-clone setting (not shared via git). They'll need to
-  `git update-index --no-skip-worktree` on that file before pulling upstream
-  edits to it, then re-apply `--skip-worktree` afterwards.
-- If you (the agent) ever see `<!--SR:...-->` comments in a deck file you're
-  editing or ingesting, strip them before committing — they're not part of the
-  card content.
+  The setting is per clone and isn't shared through git. Before pulling upstream edits
+  to that file, they run `git update-index --no-skip-worktree` on it, then set
+  `--skip-worktree` again afterwards.
+- If you see `<!--SR:...-->` comments in a deck you're editing or ingesting, strip them
+  before committing. They aren't card content.
 
-## Step 6 — Integration with the wiki
+## Step 6: Connect the deck to the wiki
 
-After generating cards:
-- Note which content pages the cards are derived from.
+After writing the deck:
+- Record which pages the cards came from.
 - Update the relevant `index.md` and append to `<wiki_root>/log.md`.
-- Recommend an initial SRS interval of 1-3 days for new material, in either tool.
-
----
-
-**Trigger phrases:** "make cue cards from", "generate flashcards for", "create
-revision cards on", "quiz me on the page about", "export cards to anki", "turn
-[[page]] into spaced repetition cards".
+- Recommend a first review interval of 1–3 days for new material, in either tool.

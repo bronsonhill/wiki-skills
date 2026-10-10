@@ -1,24 +1,24 @@
 # wiki-skills
 
-A Claude Code plugin holding the skills that maintain an agentic personal wiki (the
-Karpathy pattern): ingesting sources, linting the graph, querying it, and generating
-revision material from it.
+A Claude Code plugin with the skills that maintain an agentic personal wiki (the
+Karpathy pattern): ingest sources, lint the link graph, query it, and turn it into
+revision material.
 
-The plugin holds logic only. Anything that varies between wikis — directory names, the
-domain taxonomy, whether raw source files may be archived — lives in each consuming
-repo's `.claude/wiki-schema.md`, which the skills read at run time. Adding a new wiki
-should be a schema file plus a plugin install, with no change to this repo.
+The plugin holds logic only. Anything that differs between wikis (directory names, the
+domain list, whether raw source files may be archived) lives in the consuming repo's
+`.claude/wiki-schema.md`, which the skills read at run time. Adding a wiki takes a
+schema file and a plugin install; this repo doesn't change.
 
 ## Skills
 
 | Skill | Purpose |
 |---|---|
-| `ingest` | Bring one source into the wiki: acquisition (including transcript capture for recordings), source page, entity/concept pages, index and log updates. Ships `fetch_transcript.py`. |
-| `content-digest` | Turn ingested material into a layered digest built to be read instead of the original. Calls `ingest` first when handed new sources. |
-| `lint` | Health checks — orphans, dangling links, index drift, frontmatter and domain issues. Ships `lint.py`. |
-| `query` | Synthesise an answer across pages with citations, and file valuable output back. |
-| `cue-cards` | Generate spaced-repetition decks in Obsidian SR format, with an Anki TSV export. |
-| `practice-exam` | Build a practice exam and answer key as typeset PDFs via LaTeX. |
+| `ingest` | Brings one source into the wiki: gets a transcript for recordings, writes the source page, creates or updates entity and concept pages, and updates the indexes and log. Ships `fetch_transcript.py`. |
+| `content-digest` | Builds a layered digest from ingested material, written to be read in place of the original. Runs `ingest` first on any new sources. |
+| `lint` | Finds orphans, dangling links, index drift, and frontmatter and domain errors. Ships `lint.py`. |
+| `query` | Answers questions from the wiki with citations, and files useful answers back as pages. |
+| `cue-cards` | Writes spaced-repetition decks in Obsidian SR format and exports them to Anki TSV. |
+| `practice-exam` | Writes a practice exam and answer key in LaTeX and compiles both to PDF. |
 
 ## Install
 
@@ -27,7 +27,7 @@ should be a schema file plus a plugin install, with no change to this repo.
 /plugin install wiki@wiki-skills
 ```
 
-To pre-register it for everyone working in a given repo, commit this to that repo's
+To pre-register it for everyone working in a repo, commit this to that repo's
 `.claude/settings.json`:
 
 ```json
@@ -41,46 +41,43 @@ To pre-register it for everyone working in a given repo, commit this to that rep
 }
 ```
 
-A project-local skill of the same name overrides the plugin's copy, which is the escape
-hatch when one repo needs to diverge temporarily.
+A project-local skill with the same name overrides the plugin's copy. Use that when one
+repo needs to diverge for a while.
 
 ## Configuring a wiki
 
 Copy `wiki-schema.template.md` to `.claude/wiki-schema.md` in the consuming repo and
-edit its frontmatter. Those keys — `wiki_root`, `source_policy`, `raw_dir`,
-`derived_dir`, `index_style`, `domains`, `subject`, `git_workflow` — are what the skills
-read; `lint.py` parses the same frontmatter directly and needs no arguments when run
-from anywhere inside the repo. Every key has a default, so a minimal schema is valid.
+edit its frontmatter. The skills read eight keys: `wiki_root`, `source_policy`,
+`raw_dir`, `derived_dir`, `index_style`, `domains`, `subject` and `git_workflow`.
+`lint.py` parses the same frontmatter itself, so it runs without arguments from
+anywhere in the repo. Every key has a default; set only the ones that differ.
 
-`source_policy` is the one worth deliberating over. `link-only` means sources are never
-copied into the repo, only linked and summarised in original words. Set it wherever the
-sources are copyright or the repo is public.
+`source_policy` needs the most thought. Under `link-only`, sources are never copied
+into the repo, and pages hold a link plus a summary in original words. Use it whenever
+the sources are under copyright or the repo is public.
 
 ## Consuming repos
 
-- [cmas](https://github.com/bronsonhill/cmas) — single-subject public wiki, `source_policy: link-only`.
-- MC-SOFTENG — local multi-domain study wiki, `source_policy: archive-raw`.
+- [cmas](https://github.com/bronsonhill/cmas): single-subject public wiki, `source_policy: link-only`.
+- MC-SOFTENG: local multi-domain study wiki, `source_policy: archive-raw`.
 
 ## Status
 
-Version 0.3.0 splits acquisition from presentation. `ingest` owns everything that
-brings material into the wiki, transcript capture included; `content-digest` (renamed
-from `lecture-digest`) owns turning that material into something readable, and calls
-`ingest` first when it is handed new sources.
+Version 0.3.0 separates acquisition from presentation. `ingest` owns everything that
+brings material into the wiki, transcript capture included. `content-digest` (formerly
+`lecture-digest`) turns that material into something readable, and calls `ingest` first
+when it gets new sources.
 
-That split is why YouTube is no longer baked into the digest workflow. Transcript
-acquisition is an ingest concern, and the YouTube-specific parts of it — URL cleaning,
-the caption-overlap dedupe, the mangled-terminology warnings — live in
-`ingest/references/youtube.md`, read only when a source is actually on YouTube.
-Sources on other hosts, or with a transcript already supplied, never load it.
+YouTube handling moved out of the digest workflow as a result. URL cleaning, the
+caption-overlap dedupe and the warnings about mangled terminology now live in
+`ingest/references/youtube.md`, which the agent reads only when a source is on YouTube.
 
-Transcript destination follows `source_policy`: kept in the wiki under `archive-raw`,
-written to a scratch directory outside the repo under `link-only`. A transcript is
-closer to the source material than a summary is, so it falls under the same constraint
-as the slides.
+Where a transcript goes depends on `source_policy`: into the wiki under `archive-raw`,
+into a scratch directory outside the repo under `link-only`. A transcript reproduces
+the source almost word for word, so it gets the same treatment as the slides.
 
-Digests are written to `<derived_dir>`, not `sources/`. Ingest already writes one source
-page per source, and a second one would break the indexes and orphan checks.
+Digests go to `<derived_dir>`, not `sources/`. Ingest already writes one source page per
+source; a second would break the indexes and the orphan check.
 
-Pin consuming repos to a tag rather than tracking the default branch, so a mid-refactor
-skill never changes ingest behaviour under someone without warning.
+Pin consuming repos to a tag instead of tracking the default branch, so a half-finished
+refactor here can't change ingest behaviour for someone without warning.
