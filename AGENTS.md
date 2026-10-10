@@ -7,6 +7,9 @@ This file is the project's committed home for project-intrinsic agent knowledge:
   `pytest.ini` next to the skill (e.g. `plugins/wiki/skills/cue-cards/tests/`), not a
   repo-wide test suite. Use a venv (`python3 -m venv .venv && source .venv/bin/activate
   && pip install pytest`) to run them; `.venv/` is gitignored.
+- Claude Code caches an installed plugin by its `version`, so a merged change never
+  reaches consuming repos until `version` is bumped in both
+  `plugins/wiki/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
 
 ## Maintaining this file
 
