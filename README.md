@@ -57,6 +57,30 @@ anywhere in the repo. Every key has a default; set only the ones that differ.
 into the repo, and pages hold a link plus a summary in original words. Use it whenever
 the sources are under copyright or the repo is public.
 
+## Publishing with Quartz
+
+Quartz renders a section's `index.md` as that folder's page and then appends its own
+listing of every file in the folder. Under `index_style: per-section`, the `## Pages`
+catalog the skills maintain therefore appears twice. Keep the catalog, since agents
+navigate by it, and stop Quartz from rendering it. The cmas wiki patches its vendored
+Quartz with two `FolderContent` options: `hideCatalog` cuts the folder page body at the
+first `h2`, and `showDescription` prints each page's frontmatter `description` under
+its title in the listing.
+
+```ts
+// quartz.config.ts
+import * as Component from "./quartz/components"
+
+Plugin.FolderPage({
+  pageBody: Component.FolderContent({ hideCatalog: true, showDescription: true }),
+}),
+```
+
+The patch lives in `quartz/components/pages/FolderContent.tsx` and
+`quartz/components/PageList.tsx` in the cmas repo; copy both files across. Pages
+without a frontmatter `description` show only a title in the listing, which suits
+cue-card decks (they carry no frontmatter). `lint` reports any other page missing one.
+
 ## Querying a wiki from another directory
 
 The plugin ships a read-only MCP server (`plugins/wiki/mcp/wiki_mcp.py`) that starts

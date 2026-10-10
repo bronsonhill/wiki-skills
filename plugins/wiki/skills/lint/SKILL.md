@@ -36,7 +36,8 @@ It reports:
 - **Index drift:** pages on disk that are missing from the index that should list them
   (per-section or root, following `index_style`).
 - **Frontmatter issues:** pages whose frontmatter doesn't match the schema for their
-  type (no `type`, a source page with no `link`, etc.). Cue-card decks are skipped,
+  type (no `type`, a source page with no `link`, no `description`, etc.). Cue-card
+  decks are skipped,
   since they have no frontmatter by design.
 - **Domain issues**, only when `domains` is non-empty: content pages with no `domain`,
   or with a top-level domain outside the allowed set.
@@ -62,7 +63,9 @@ It exits non-zero when it finds anything, so it can gate a script or a PR check.
 ### 3. Report and fix
 
 - Write the full report to `<wiki_root>/lint-reports/<YYYY-MM-DD>.md`.
-- Fix mechanical problems directly: stub missing pages, add pages to the indexes.
+- Fix mechanical problems directly: stub missing pages, add pages to the indexes, and
+  fill a missing `description` from the page's index entry (or write one line from the
+  page's opening definition if it has no entry).
 - Report contradictions and data gaps to the user instead of resolving them.
 - Append one line to `<wiki_root>/log.md`:
   `## [YYYY-MM-DD] lint | Issues found: X`.

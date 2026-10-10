@@ -54,7 +54,7 @@ available, run the `connect` skill.
   want to find it again: a comparison no existing page makes, a worked derivation, an
   exam-focused summary. One-off lookups don't need a page.
 - Give the new page the frontmatter `.claude/wiki-schema.md` requires, including
-  `domain` when the wiki uses it.
+  `description` (the same line as its index entry) and `domain` when the wiki uses it.
 - Update the relevant `index.md` and append to `<wiki_root>/log.md`:
   `## [YYYY-MM-DD] query | <topic>`.
 - Link the new page from the concept and entity pages it draws on, and link back.

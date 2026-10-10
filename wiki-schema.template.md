@@ -51,13 +51,16 @@ when a convention calls for judgement.
   ```yaml
   ---
   title: Agent-Based Model
+  description: Simulation built from autonomous agents whose interactions produce system-level behaviour
   type: concept | entity | source | material
   domain: academic/cmas    # only when `domains` is non-empty
   tags: [abm, netlogo]
   date: 2026-08-01
   ---
   ```
-  `source` pages also carry `link: <url>`.
+  `source` pages also carry `link: <url>`. `description` is one line, the same text as
+  the page's index entry; site generators such as Quartz show it in page listings and
+  link previews.
 - **Wikilinks:** `[[page-name]]` for all cross-references, in both directions where
   possible.
 - **Citations:** claims on concept, entity and derived pages link back to the
