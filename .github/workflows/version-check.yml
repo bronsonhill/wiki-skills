@@ -1,0 +1,41 @@
+name: Version check
+
+# Claude Code caches an installed plugin by its version, so a change under
+# plugins/wiki/ only reaches consuming repos if the version is bumped.
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check plugin version
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          plugin=$(jq -r .version plugins/wiki/.claude-plugin/plugin.json)
+          market=$(jq -r .metadata.version .claude-plugin/marketplace.json)
+
+          if [ "$plugin" != "$market" ]; then
+            echo "::error::plugin.json is $plugin but marketplace.json is $market; set both to the same version."
+            exit 1
+          fi
+
+          if git diff --quiet "$BASE"...HEAD -- plugins/wiki; then
+            echo "No changes under plugins/wiki/; no bump needed."
+            exit 0
+          fi
+
+          old=$(git show "$BASE:plugins/wiki/.claude-plugin/plugin.json" | jq -r .version)
+          newest=$(printf '%s\n%s\n' "$old" "$plugin" | sort -V | tail -1)
+          if [ "$plugin" = "$old" ] || [ "$newest" != "$plugin" ]; then
+            echo "::error::plugins/wiki/ changed but the version is $plugin (main has $old). Bump it in plugin.json and marketplace.json."
+            exit 1
+          fi
+          echo "Version bumped: $old -> $plugin"
