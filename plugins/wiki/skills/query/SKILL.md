@@ -18,6 +18,13 @@ Paths come from the consuming repo's `.claude/wiki-schema.md` (the configuration
 is in `ingest`). This skill reads `wiki_root`, `derived_dir`, `index_style` and
 `domains`.
 
+**Outside the wiki's repo** (no `.claude/wiki-schema.md` above the working directory),
+use the `wiki` MCP server's tools in place of file reads: `wiki_index` for step 1's
+index, `wiki_search` for its grep, `wiki_read` for the pages. Step 2 applies as
+written, citing page ids. The server is read-only, so skip step 3 and tell the user
+which answers are worth filing from inside the wiki's repo. If the tools aren't
+available, run the `connect` skill.
+
 ## Instructions
 
 ### 1. Find the pages
