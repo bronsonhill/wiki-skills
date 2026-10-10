@@ -183,6 +183,9 @@ def main() -> int:
                     if req not in fm:
                         frontmatter_issues.append((slug, f"{derived} page missing `{req}`"))
 
+            if section in index_sections and not fm.get("description"):
+                frontmatter_issues.append((slug, "missing `description` field"))
+
             if check_domains and section in index_sections:
                 doms = domain_values(fm)
                 page_domains[slug] = doms

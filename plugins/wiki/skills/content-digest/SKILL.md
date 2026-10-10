@@ -129,7 +129,8 @@ unsure.
 
 ### Step 5: Close out
 
-- Add the digest to the relevant `index.md`, following `index_style`.
+- Add the digest to the relevant `index.md`, following `index_style`, with its
+  frontmatter `description` as the entry's one-line description.
 - Append to `<wiki_root>/log.md`: `## [YYYY-MM-DD] digest | <label> — <topic>`.
 - Cross-link: the digest links to `[[sources/<slug>]]` and to the concept pages ingest
   created, and the source page links back to the digest.

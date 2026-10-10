@@ -118,6 +118,7 @@ Write `<wiki_root>/sources/<slug>.md`:
 ---
 title: <Title>
 type: source
+description: <one line on what this source covers; Step 6 reuses it as the index entry>
 source_type: <lecture | reading | paper | video | textbook | tutorial | other>
 link: <source URL>
 domain: <required when `domains` is non-empty; omit otherwise>
@@ -180,6 +181,7 @@ means, it's a concept.
 ---
 title: <Name>
 type: entity
+description: <one line on what this entity is; Step 6 reuses it as the index entry>
 entity_type: <person | paper | model | software | organisation | dataset | other>
 domain: <required when `domains` is non-empty; omit otherwise>
 tags: []
@@ -206,6 +208,7 @@ date: <YYYY-MM-DD>
 ---
 title: <Concept name>
 type: concept
+description: <one line on what this concept is; Step 6 reuses it as the index entry>
 domain: <required when `domains` is non-empty; omit otherwise>
 tags: []
 date: <YYYY-MM-DD>
@@ -244,8 +247,12 @@ overwrite an existing catalog:
 
 ```markdown
 ## Pages
-- [[<slug>]] — <one-line description> | added: YYYY-MM-DD
+- [[<slug>]] — <the page's `description`> | added: YYYY-MM-DD
 ```
+
+The catalog serves agents and the page's `description` serves anything that renders the
+wiki (Quartz shows it under each title in its folder listings), so keep the two the
+same. When you sharpen one, update the other.
 
 ### Step 7: Append to the log
 
