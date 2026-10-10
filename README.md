@@ -17,6 +17,7 @@ schema file and a plugin install; this repo doesn't change.
 | `content-digest` | Builds a layered digest from ingested material, written to be read in place of the original. Runs `ingest` first on any new sources. |
 | `lint` | Finds orphans, dangling links, index drift, and frontmatter and domain errors. Ships `lint.py`. |
 | `query` | Answers questions from the wiki with citations, and files useful answers back as pages. |
+| `connect` | Registers a wiki with the plugin's read-only MCP server so sessions in other directories can query it. |
 | `cue-cards` | Writes spaced-repetition decks in Obsidian SR format and exports them to Anki TSV. |
 | `practice-exam` | Writes a practice exam and answer key in LaTeX and compiles both to PDF. |
 
@@ -55,6 +56,26 @@ anywhere in the repo. Every key has a default; set only the ones that differ.
 `source_policy` needs the most thought. Under `link-only`, sources are never copied
 into the repo, and pages hold a link plus a summary in original words. Use it whenever
 the sources are under copyright or the repo is public.
+
+## Querying a wiki from another directory
+
+The plugin ships a read-only MCP server (`plugins/wiki/mcp/wiki_mcp.py`) that starts
+in every session where the plugin is enabled. It provides `wiki_index`, `wiki_search`
+and `wiki_read`, so a session in a coding project or another course's repo can answer
+from a wiki without leaving that directory. It runs on the Python standard library.
+
+Run `/wiki:connect` once, from anywhere. It finds your wikis (the repos with
+`.claude/wiki-schema.md`) and registers the one you pick in
+`~/.config/wiki-skills/wikis.json`. Every session can then query it. To limit a wiki
+to one project, ask for that instead; the registration then goes to
+`<project>/.claude/wikis.json`. The server re-reads both registries on every call, so
+a new wiki works without a restart.
+
+That only works when the plugin is enabled at user scope. If it's enabled only in the
+wiki repo's `.claude/settings.json`, other directories never start the server.
+
+The server never writes. Filing an answer back as a page is still the `query` skill's
+job, run from inside the wiki's repo. Tests: `cd plugins/wiki/mcp && pytest`.
 
 ## Consuming repos
 
