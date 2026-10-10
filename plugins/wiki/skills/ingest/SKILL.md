@@ -1,117 +1,116 @@
 ---
 name: ingest
 description: >
-  Ingest a new source into a personal wiki. Use this skill whenever the user wants to
-  add a source (lecture, paper, video, textbook chapter, external article) to the wiki,
-  or says things like "ingest this", "add this to the wiki", "process this source", or
-  "file this". Handles acquisition too: for recordings it obtains a transcript first,
-  including fetching captions for YouTube-hosted video. It then writes the source page,
-  creates/updates entity and concept pages, and refreshes the indexes and log. Always
-  use this skill when a source needs to be incorporated into the wiki — even if the
-  user just says "read this and add it". To turn ingested material into a long-form
-  readable document, use `content-digest`, which calls this skill first.
+  Ingest a new source into a personal wiki. Use whenever the user wants to add a source
+  (lecture, paper, video, textbook chapter, external article) to the wiki, or says
+  things like "ingest this", "add this to the wiki", "process this source", "file this",
+  or just "read this and add it". Handles acquisition: for recordings it gets a
+  transcript first, including fetching captions for YouTube video. Then it writes the
+  source page, creates or updates entity and concept pages, and updates the indexes and
+  log. To turn ingested material into a long-form readable document, use
+  `content-digest`, which calls this skill first.
 ---
 
 # Wiki Ingest
 
-Handles the full ingest pipeline for one source into a persistent, compounding wiki
-(the Karpathy agentic-wiki pattern). The human curates sources and asks good questions;
-you do the writing and maintenance.
+Runs the full ingest of one source into a persistent wiki that grows with every source
+(the Karpathy agentic-wiki pattern). The user picks sources and asks questions; you
+write and maintain the pages.
 
-## Wiki configuration — read this first
+## Wiki configuration (read first)
 
-This skill is wiki-agnostic. Every path and policy below comes from the consuming
-repo's `.claude/wiki-schema.md`, read from its YAML frontmatter. Read that file before
-doing anything else, and fall back to these defaults for any key it omits:
+This skill works on any wiki with a schema file. Every path and policy below comes from
+the YAML frontmatter of the consuming repo's `.claude/wiki-schema.md`. Read that file
+before anything else, and use these defaults for any key it omits:
 
 | Key | Default | Meaning |
 |---|---|---|
 | `wiki_root` | `wiki` | Root directory of the vault. |
 | `source_policy` | `link-only` | `link-only` records a URL and an original summary and never copies the source into the repo. `archive-raw` also copies the file into `raw_dir`. |
-| `raw_dir` | `sources/raw` | Where archived originals live, relative to `wiki_root`. Only meaningful under `archive-raw`. |
-| `derived_dir` | `materials` | Section holding worked examples, syntheses, and revision material. |
+| `raw_dir` | `sources/raw` | Where archived originals live, relative to `wiki_root`. Used only under `archive-raw`. |
+| `derived_dir` | `materials` | Section for worked examples, syntheses and revision material. |
 | `index_style` | `per-section` | `per-section` keeps an `index.md` in each section plus a root catalog; `root-only` keeps a single `index.md` at the wiki root. |
-| `domains` | *(empty)* | Allowed `domain` values. When empty the wiki covers one subject and pages carry no `domain` field. When non-empty, every content page needs one. |
-| `subject` | *(none)* | Display name of the subject, for page prose and generated documents. |
+| `domains` | *(empty)* | Allowed `domain` values. When empty, the wiki covers one subject and pages carry no `domain` field. When set, every content page needs one. |
+| `subject` | *(none)* | Display name of the subject, used in page prose and generated documents. |
 | `git_workflow` | `none` | `pr` opens a branch and PR after an ingest, `direct` commits to the current branch, `none` leaves version control alone. |
 
-Under `source_policy: link-only` the constraint is not stylistic. That policy is set by
-wikis whose sources are copyright and whose repo is public or shared. Read the source to
-understand it, but never copy its text, images, or files into the repo — the page you
-write is a link plus an original summary in your own words. Sources that are themselves
-open (public papers, permissively licensed textbooks, the user's own notes) can be
-described more liberally, but still summarise rather than pasting long verbatim blocks.
+Wikis set `source_policy: link-only` when their sources are under copyright and the
+repo is public or shared, so treat it as a legal limit. Read the source to understand
+it, but never copy its text, images or files into the repo. The page you write is a
+link plus a summary in your own words. Open sources (public papers, permissively
+licensed textbooks, the user's own notes) allow more latitude, but summarise those too
+instead of pasting long passages.
 
-If `.claude/wiki-schema.md` does not exist, say so and offer to create one before
-ingesting, rather than guessing at the wiki's conventions.
+If `.claude/wiki-schema.md` doesn't exist, tell the user and offer to create one before
+ingesting. Don't guess the wiki's conventions.
 
 ## Bundled files
 
-- `scripts/fetch_transcript.py` — fetches YouTube captions as timestamp-anchored
-  markdown. Used only from Step 2, via `references/youtube.md`.
-- `references/youtube.md` — YouTube-specific transcript guidance. Read it only when the
-  source is actually on YouTube; there is nothing in it for other hosts.
+- `scripts/fetch_transcript.py` fetches YouTube captions as timestamped markdown. Only
+  Step 2 uses it, via `references/youtube.md`.
+- `references/youtube.md` holds the YouTube-specific transcript steps. Read it only
+  when the source is on YouTube.
 
 ---
 
 ## Ingest pipeline
 
-Work through these steps in order. Don't stop for confirmation between steps unless
-you hit a genuine ambiguity — show the full result first, then discuss.
+Work through the steps in order without stopping for confirmation. Stop only when
+something is ambiguous enough that a wrong guess would mean rewriting pages. Show the
+finished result, then discuss.
 
-### Step 1 — Identify the source
+### Step 1: Identify the source
 
-Get (or ask for) the source's URL, title, and type (lecture, reading, paper, video,
+Get (or ask for) the source's URL, title and type (lecture, reading, paper, video,
 textbook chapter, tutorial).
 
 Derive a kebab-case slug from the title, e.g. `l04-cellular-automata.md` or
 `wolfram-a-new-kind-of-science.md`. If the original filename is already descriptive and
 kebab-case, keep it.
 
-Then branch on `source_policy`. Under `link-only`, a local file the user supplies (a PDF
-they have open, a downloaded deck) is read for understanding only and never copied into
+Then check `source_policy`. Under `link-only`, read any local file the user supplies (a
+PDF they have open, a downloaded deck) for understanding only, and never copy it into
 the repo. Under `archive-raw`, copy it unmodified to `<wiki_root>/<raw_dir>/<slug>.<ext>`
-so the original stays available for re-reading; keeping archived originals in their own
-directory rather than beside the `.md` pages keeps the Obsidian graph clean.
+so the original is there to reread. A separate directory keeps archived files out of
+the Obsidian graph view.
 
-### Step 2 — Obtain a transcript, if the source is a recording
+### Step 2: Get a transcript, if the source is a recording
 
-Skip this step for text sources. For a lecture recording, talk, or podcast, you need a
-transcript before you can read the source at all.
+Skip this step for text sources. A lecture recording, talk or podcast can't be read
+until you have a transcript.
 
-Establish where the transcript is coming from:
+Work out where the transcript will come from:
 
-- **The user supplied one**, or the host provides a caption/transcript download — use it
-  as-is.
-- **The source is on YouTube** — read `references/youtube.md` and follow it. It covers
-  URL cleaning, the fetch script, and the auto-caption pitfalls that silently corrupt
-  word counts and timestamps.
-- **Any other host, with no transcript available** — say so and ask how the user wants
-  to proceed rather than guessing. Transcribing locally is an option but a slow one, and
-  it is their call.
+- **The user supplied one**, or the host offers a caption or transcript download: use
+  it as-is.
+- **The source is on YouTube:** read `references/youtube.md` and follow it. It covers
+  URL cleaning, the fetch script, and the dedupe check. When the dedupe fails, word
+  counts and timestamps come out wrong with no error.
+- **Any other host, with no transcript available:** tell the user and ask how to
+  proceed. Local transcription works but is slow, and whether to spend that time is
+  their decision.
 
-Where the transcript is written depends on `source_policy`. Under `archive-raw`, put it
-in `<wiki_root>/<raw_dir>/<slug>-transcripts` and keep it — it is archived source
-material like any other original. Under `link-only`, write it to a scratch directory
-outside the repo (`$TMPDIR/<slug>-transcripts` is fine) and do not commit it. A
-transcript is closer to the source material than a summary is, so under that policy it
-is exactly the artifact that must not land in the repo. What you write from it is
-original prose either way; the transcript is working material.
+Where the transcript goes depends on `source_policy`. Under `archive-raw`, write it to
+`<wiki_root>/<raw_dir>/<slug>-transcripts` and keep it, like any other archived
+original. Under `link-only`, write it to a scratch directory outside the repo
+(`$TMPDIR/<slug>-transcripts` works) and don't commit it. A transcript reproduces the
+source almost word for word, which is what `link-only` exists to keep out of the repo.
+The pages you write from it are original prose under either policy.
 
-Whatever the source, the slides or paper are ground truth for names, notation, and
-terminology. A transcript is a secondary record and is frequently wrong on exactly the
-technical terms that matter.
+The slides or the paper are the authority on names, notation and terminology.
+Transcripts get technical terms wrong more often than anything else ("peratron" for
+Perceptron), so check each term against the deck.
 
-### Step 3 — Read the source thoroughly
+### Step 3: Read the source thoroughly
 
-Build a mental model of:
+Before writing, work out:
 - The main thesis or purpose
-- Key concepts introduced or used
-- Key entities mentioned (people, models, tools, software, papers)
-- Important claims, results, or worked examples worth preserving
-- Anything worth a short original quote (used sparingly, with attribution)
+- The key concepts it introduces or uses
+- The key entities it mentions (people, models, tools, software, papers)
+- The claims, results and worked examples worth keeping
+- Any short passage worth quoting (sparingly, with attribution)
 
-### Step 4 — Write the source page
+### Step 4: Write the source page
 
 Write `<wiki_root>/sources/<slug>.md`:
 
@@ -129,51 +128,51 @@ date: <YYYY-MM-DD>
 # <Title>
 
 ## Overview
-<2-4 paragraph original summary. What this source covers and why it matters. Written
-for a reader who hasn't seen the source. Under `link-only`, never copy its wording.>
+<2-4 paragraph original summary of what this source covers and why it matters, for a
+reader who hasn't seen it. Under `link-only`, never copy its wording.>
 
 ## Key concepts
-<List concepts central to this source, each linked: [[concept-name]]. Create stubs in
-Step 5 if the page doesn't exist yet — link to it anyway.>
+<Concepts central to this source, each linked: [[concept-name]]. Link even if the page
+doesn't exist yet; Step 5 creates it.>
 
 ## Key entities
-<List entities central to this source (people, tools, models, papers cited), linked:
-[[entity-name]]. Create stubs in Step 5 if needed.>
+<Entities central to this source (people, tools, models, papers cited), linked:
+[[entity-name]]. Step 5 creates any missing pages.>
 
 ## Topics covered (revision checklist)
-<Exhaustive but concise bullet list of every topic/method/definition mentioned. This
-is the "have I covered everything" checklist for revision — don't duplicate the
-Overview's depth, focus on completeness.>
+<Short bullets for every topic, method and definition the source mentions, so a reader
+can check they have covered everything. Aim for breadth; the Overview carries the
+explanation.>
 
 ## Notable claims / results
-<Precise, citable bullets of the most important factual claims or findings.>
+<Precise, citable bullets for the most important claims or findings.>
 
 ## Connections
-<Cross-references to other wiki pages this source relates to, extends, or contradicts.>
+<Links to other wiki pages this source relates to, extends or contradicts.>
 ```
 
-### Step 5 — Update concept and entity pages
+### Step 5: Update concept and entity pages
 
-After writing the source page, identify every concept and entity it introduces,
-defines, or meaningfully discusses.
+After writing the source page, list every concept and entity the source introduces,
+defines or discusses at more than a passing mention.
 
-For each:
+For each one:
 
-1. **Check if a page already exists** in `<wiki_root>/concepts/` or `<wiki_root>/entities/`.
-2. **If it exists:** append a `## Sources` entry linking to the new source. Update the
-   body if the new source adds meaningful new information or refines the definition —
-   note contradictions explicitly rather than silently overwriting.
-3. **If it doesn't exist:** create a stub page (templates below). Don't leave a
-   concept or entity mentioned in the source without a page.
+1. **Check for an existing page** in `<wiki_root>/concepts/` or `<wiki_root>/entities/`.
+2. **If it exists:** append a `## Sources` entry linking to the new source. Edit the
+   body if the source adds facts or sharpens the definition. If it contradicts the
+   page, record both claims with their sources instead of overwriting.
+3. **If it doesn't exist:** create a stub from the templates below. Every concept and
+   entity the source discusses gets a page.
 
-The distinction:
-- **Entity** — a specific named thing you can point to: a person, tool, model,
-  software package, paper, organisation. (NetLogo, John Conway, a specific paper)
-- **Concept** — an idea, mechanism, technique, or phenomenon you explain rather than
-  identify. (cellular automaton, emergence, agent-based model, Monte Carlo method)
+To tell them apart:
+- **Entity:** a specific named thing: a person, tool, model, software package, paper,
+  organisation (NetLogo, John Conway, a specific paper).
+- **Concept:** an idea, mechanism, technique or phenomenon that needs explaining
+  (cellular automaton, emergence, agent-based model, Monte Carlo method).
 
-When in doubt: can you point at the specific thing? → Entity. Do you need to explain
-what it means? → Concept.
+If you can point at the specific thing, it's an entity. If you have to explain what it
+means, it's a concept.
 
 #### Entity page template (`<wiki_root>/entities/<slug>.md`)
 
@@ -189,16 +188,16 @@ date: <YYYY-MM-DD>
 
 # <Name>
 
-<1-2 sentence description of what/who this is.>
+<1-2 sentences on what or who this is.>
 
 ## Key facts
-<Bullet list of the most important facts.>
+<Bullets for the most important facts.>
 
 ## Relevance
-<Why this entity matters in the context of `subject` (or of the wiki's scope).>
+<Why this entity matters to `subject` (or to the wiki's scope).>
 
 ## Sources
-- [[sources/<slug>]] — <one-line note on how this source relates to the entity>
+- [[sources/<slug>]] — <one line on how this source relates to the entity>
 ```
 
 #### Concept page template (`<wiki_root>/concepts/<slug>.md`)
@@ -214,35 +213,33 @@ date: <YYYY-MM-DD>
 
 # <Concept name>
 
-<1-3 sentence definition. Precise and technical where appropriate.>
+<1-3 sentence definition, precise and technical where the subject calls for it.>
 
 ## How it works
-<Explanation of the mechanism or idea. Use concrete examples from sources.>
+<The mechanism or idea, with concrete examples from the sources.>
 
 ## Formula
-<If the concept has a mathematical definition (e.g. a transition rule, an update
-equation), add this section using proper Obsidian LaTeX: `$...$` inline, `$$...$$`
-block.>
+<Only if the concept has a mathematical definition (a transition rule, an update
+equation). Use Obsidian LaTeX: `$...$` inline, `$$...$$` block.>
 
 ## Why it matters
-<Significance in the context of `subject` (or of the wiki's scope).>
+<Why this concept matters to `subject` (or to the wiki's scope).>
 
 ## Relationships
 <Links to related concepts and entities: [[other-concept]], [[entity-name]]>
 
 ## Sources
-- [[sources/<slug>]] — <one-line note on what this source says about the concept>
+- [[sources/<slug>]] — <one line on what this source says about the concept>
 ```
 
-### Step 6 — Update the indexes
+### Step 6: Update the indexes
 
 Under `index_style: per-section`, each of `<wiki_root>/sources/index.md`,
-`entities/index.md`, `concepts/index.md`, and `<derived_dir>/index.md` keeps its short
-description at the top followed by a catalog, and `<wiki_root>/index.md` links to each
-section. Under `root-only`, there is a single `<wiki_root>/index.md` holding every entry
-grouped by section.
+`entities/index.md`, `concepts/index.md` and `<derived_dir>/index.md` opens with a short
+description followed by a catalog, and `<wiki_root>/index.md` links to each section.
+Under `root-only`, a single `<wiki_root>/index.md` holds every entry, grouped by section.
 
-Either way, append new pages under a `## Pages` heading (create it if missing) and never
+Either way, append new pages under a `## Pages` heading (create it if missing). Never
 overwrite an existing catalog:
 
 ```markdown
@@ -250,10 +247,10 @@ overwrite an existing catalog:
 - [[<slug>]] — <one-line description> | added: YYYY-MM-DD
 ```
 
-### Step 7 — Append to the log
+### Step 7: Append to the log
 
-Append a single entry to `<wiki_root>/log.md` (create the file with a `# Wiki Log`
-header if it doesn't exist yet):
+Append one entry to `<wiki_root>/log.md` (create the file with a `# Wiki Log` header if
+it doesn't exist):
 
 ```markdown
 ## [<YYYY-MM-DD>] ingest | <source title>
@@ -264,48 +261,47 @@ header if it doesn't exist yet):
 - **Updated pages:** <list or "none">
 ```
 
-### Step 8 — Run lint
+### Step 8: Run lint
 
-Always invoke the `lint` skill after writing all pages
-(`python3 "${CLAUDE_PLUGIN_ROOT}/skills/lint/lint.py"`). Resolve any new dangling
-links or index drift it reports before closing out the ingest. Append the lint result to
-`<wiki_root>/log.md` and write the full report to
-`<wiki_root>/lint-reports/<YYYY-MM-DD>.md`.
+Run the `lint` skill once all pages are written
+(`python3 "${CLAUDE_PLUGIN_ROOT}/skills/lint/lint.py"`). Fix any new dangling links or
+index drift before finishing. Append the result to `<wiki_root>/log.md` and write the
+full report to `<wiki_root>/lint-reports/<YYYY-MM-DD>.md`.
 
-This is non-optional — ingests that skip linting accumulate orphans and index drift
-quickly, especially with multiple contributors working in parallel.
+Don't skip this step. One ingest adds several pages and many links, and a dangling
+link is cheapest to fix before another contributor's ingest builds on top of it.
 
 ---
 
 ## After the ingest
 
-Give a brief, conversational debrief:
+Debrief the user in a few short paragraphs covering:
 
-1. What the source is and what it contributes to the wiki
-2. Which pages were created or updated (summarised, not exhaustive)
-3. Any open questions, gaps, or contradictions noticed
-4. Suggested follow-up sources worth ingesting
+1. What the source is and what it adds to the wiki
+2. Which pages were created or updated (a summary, not a full list)
+3. Any open questions, gaps or contradictions you noticed
+4. Follow-up sources worth ingesting
 
-The human may want to correct the summary, redirect emphasis, or ask follow-up
-questions — revise before closing out.
+The user may correct the summary, shift the emphasis or ask follow-up questions. Make
+those revisions before finishing.
 
 ---
 
 ## Quality standards
 
-- **Summaries** should be genuinely useful to a reader who hasn't seen the source —
-  synthesise, don't transcribe, and respect `source_policy` on wording.
-- **Concept and entity pages** should be updated on every ingest that touches them,
-  not just when the source is primarily about them.
-- **Cross-references** should be bidirectional where meaningful.
-- **Contradictions** should be flagged explicitly, not silently overwritten.
+- **Summaries:** write for a reader who hasn't seen the source. Synthesise instead of
+  transcribing, and follow `source_policy` on wording.
+- **Concept and entity pages:** update them on every ingest that touches them, even
+  when the source is mostly about something else.
+- **Cross-references:** link in both directions wherever a reader of either page would
+  want the other.
+- **Contradictions:** record both claims with their sources; never overwrite silently.
 
 ## Version control
 
 Follow `git_workflow` from the schema.
 
-Under `pr`, the wiki is versioned in a shared repo and ingests land as reviewed
-branches:
+Under `pr`, the wiki lives in a shared repo and each ingest lands as a reviewed branch:
 
 ```bash
 git checkout -b ingest/<slug>
@@ -314,8 +310,8 @@ git commit -m "ingest: <source title> — added <N> concepts, <M> entities"
 git push -u origin ingest/<slug>
 ```
 
-Then open a PR (check the repo's `CONTRIBUTING.md`). Don't push directly to the default
-branch unless the user explicitly says to.
+Then open a PR (check the repo's `CONTRIBUTING.md`). Don't push to the default branch
+unless the user explicitly asks.
 
 Under `direct`, commit to the current branch with the same message format and no PR.
-Under `none`, leave version control alone — the wiki may not be a git repo at all.
+Under `none`, leave version control alone; the wiki may not be a git repo at all.

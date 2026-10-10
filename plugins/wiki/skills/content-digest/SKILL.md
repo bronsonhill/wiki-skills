@@ -1,113 +1,109 @@
 ---
 name: content-digest
 description: >
-  Turn wiki content into a layered, readable digest — a document engineered to be read
-  instead of consuming the original, at 2–3x the speed, without losing fidelity. Works
-  from material already in the wiki; when given new sources it calls ingest first
-  to bring them in. Use whenever the user wants notes, a digest, or "something I can
-  read instead of watching/reading this". Strongest on lecture recordings plus their
-  slides, but applies to papers, readings, and talks. Triggers on "digest these
-  lectures", "I don't want to watch this", "turn these videos into notes",
-  "pre-lecture digest", "digest this paper".
+  Turn wiki content into a layered digest meant to be read in place of the original,
+  at 2–3x the speed, with nothing of substance dropped. Works from material already in
+  the wiki; given new sources, it runs ingest on them first. Use whenever the user wants
+  notes, a digest, or "something I can read instead of watching/reading this". Works
+  best on lecture recordings with their slides; also handles papers, readings and
+  talks. Triggers on "digest these lectures", "I don't want to watch this", "turn these
+  videos into notes", "pre-lecture digest", "digest this paper".
 ---
 
 # Content Digest
 
-Converts source material into a **layered digest**: a document engineered to be read
-*instead of* watching or reading the original, at 2–3x the speed, without losing
-anything that mattered.
+Turns source material into a **layered digest**: a document the user reads *instead of*
+watching or reading the original, at 2–3x the speed, without missing anything they
+would have needed from it.
 
-Paths and policies come from the consuming repo's `.claude/wiki-schema.md` — see the
-configuration table in `ingest`. This skill reads `wiki_root`, `derived_dir`, and
+Paths and policies come from the consuming repo's `.claude/wiki-schema.md` (the
+configuration table is in `ingest`). This skill reads `wiki_root`, `derived_dir` and
 `domains`.
 
 ## Where this sits
 
-This skill does not acquire sources. Getting material into the wiki — downloading,
-transcribing recordings, writing the source page — is `ingest`'s job, and that
-includes transcript capture. This skill starts from what is already in the wiki and
-produces something readable from it.
+This skill doesn't acquire sources. Getting material into the wiki (downloading,
+transcribing recordings, writing the source page) is `ingest`'s job. This skill starts
+from what the wiki already holds and makes something readable from it.
 
-So the first question is always whether the material is ingested yet:
+So first check whether the material has been ingested:
 
-- **Already in the wiki** — go straight to Step 1.
-- **New sources supplied with the request** (video links, a paper, a deck) — invoke
-  `ingest` on them first, once per source, and let it finish. It will obtain any
-  transcript, write the source page, and create the concept and entity pages. Then
-  come back here.
+- **Already in the wiki:** go straight to Step 1.
+- **New sources supplied with the request** (video links, a paper, a deck): run
+  `ingest` on each source first and wait for it to finish. It gets any transcript,
+  writes the source page, and creates the concept and entity pages. Then come back here.
 
-Do not duplicate ingest's work by hand, and do not write a second source page for
-material it has already filed.
+Don't redo ingest's work by hand, and don't write a second source page for material it
+has already filed.
 
 ---
 
-## The governing principle
+## Fidelity rules
 
-Follow the repo's writing style guide at `CLAUDE.md` for voice, sentence construction, and
-formatting. It applies to digest prose. The rules below govern *what goes in* a digest; that
-file governs *how it reads*.
+Follow the consuming repo's `CLAUDE.md` style guide for voice, sentence construction
+and formatting in digest prose. The rules below cover what goes into a digest.
 
-**Restructure, don't compress.**
+Lectures run at about 130 words per minute; people read at 250 or more. A document that
+keeps everything, in order, already saves 2–3x over watching before a single word is
+cut. Cutting is where digests lose things, and the speedup doesn't depend on it.
 
-Lectures run ~130 wpm; reading runs 250+. A *full-fidelity* linear document already
-beats watching by 2–3x before a single word is cut. Cutting is where fidelity dies,
-and you don't need to cut to get the speedup.
+So reproduce worked examples, algorithm traces and formal definitions in full. Never
+summarise them. Remove only repetition: restated points, admin announcements, filler.
+A long digest is fine as long as its structure lets the reader find their way around.
 
-So: never summarise a worked example, an algorithm trace, or a formal definition.
-Reproduce them. Compress only redundancy — restated points, admin chatter, filler.
-Length is not the enemy; unstructured length is.
+Three rules follow:
 
-Three rules follow from this:
-
-1. **Prose spine, not bullets.** Bullet-shredding strips the causal and contrastive
-   connective tissue ("we need heuristics *because* blind search blows up here") —
-   which is exactly what transfers to unseen exam questions. Write tight paragraphs.
-   Bullets are for genuine lists only: enumerated properties, algorithm steps, options.
-2. **Anchor everything.** Every spine section carries slide numbers and a clickable
-   timestamp. This makes not-watching *safe* — any claim you distrust is one click
-   from the source. Fidelity becomes recoverable rather than lost.
-3. **Surface the transcript-only material.** What the lecturer said but didn't put on
-   a slide — intuitions, "this trips people up", worked reasoning, exam hints — is the
-   only real reason to watch. Extract it explicitly and mark it, and the reason evaporates.
+1. **Write paragraphs, and keep bullets for real lists.** Bullet points drop the
+   connectives ("we need heuristics *because* blind search blows up here"), and those
+   connectives are what let a student answer an exam question they haven't seen
+   before. Bullets suit enumerated properties, algorithm steps and options.
+2. **Anchor every section.** Each spine section carries slide numbers and a clickable
+   timestamp, so any claim the reader doubts is one click from the original. The
+   anchors are what make skipping the lecture safe.
+3. **Pull out what was only said aloud.** Intuitions, "this trips people up" warnings,
+   worked reasoning and exam hints that never made it onto a slide are the only reason
+   to watch the recording. Extract them and mark them, and the reader has nothing left
+   to watch for.
 
 ---
 
 ## Pipeline
 
-Work through in order. Don't stop for confirmation between steps unless you hit a
-genuine ambiguity — the human wants to see the full result, then discuss.
+Work through the steps in order without stopping for confirmation, unless something is
+ambiguous enough that a wrong guess would mean rewriting the digest. Show the finished
+result, then discuss.
 
-### Step 1 — Gather the material
+### Step 1: Gather the material
 
-Establish, per digest: the source page(s) in the wiki, the transcript (if the source was
-a recording), the slide or paper file, and a label (`l01`, `l02`, … for lectures; a
-kebab slug otherwise).
+For each digest, establish: the source page(s) in the wiki, the transcript (if the
+source was a recording), the slide or paper file, and a label (`l01`, `l02`, … for
+lectures; a kebab-case slug otherwise).
 
-A single lecture is often **several short videos** plus one deck. Ingest handles them as
-one source; digest them as one document.
+One lecture is often **several short videos** plus one deck. Ingest files them as one
+source; digest them as one document.
 
-If a transcript exists, `ingest` will have told you where it put it — in the wiki
-under `archive-raw`, or in a scratch directory under `link-only`. Read it from there.
-If the source page exists but the transcript has been cleaned up, ask rather than
-re-fetching; re-running acquisition is ingest's call, not this skill's.
+If a transcript exists, `ingest` will have reported where it put it: in the wiki under
+`archive-raw`, or in a scratch directory under `link-only`. Read it from there. If the
+source page exists but the transcript has been deleted, ask the user instead of
+fetching it again; re-running acquisition is ingest's decision.
 
-### Step 2 — Read the slides or paper
+### Step 2: Read the slides or paper
 
-Use the `pdf` skill to extract text per page. Also **view** pages that carry diagrams,
-state-space figures, algorithm pseudocode, or tables — those are usually the load-bearing
-content in a technical subject and never survive text extraction.
+Use the `pdf` skill to extract text per page. Also **view** any page with a diagram,
+state-space figure, algorithm pseudocode or table. In a technical subject those pages
+often carry most of the content, and text extraction loses them entirely.
 
-Record, per slide: its number, title, and what it actually asserts. You need slide
-numbers for the anchors in Step 4.
+Record, per slide: its number, its title, and what it actually claims. Step 4 needs the
+slide numbers for the anchors.
 
-### Step 3 — Align the streams
+### Step 3: Align the streams
 
-When there are two streams — a recording and a deck — build a mapping from slide ranges
-to transcript spans. The lecturer moves through the deck roughly linearly, so match on
-terminology and worked-example content.
+When there are two streams, a recording and a deck, map slide ranges to transcript
+spans. Lecturers move through the deck roughly in order, so match on terminology and
+worked-example content.
 
-For a single-stream source such as a paper, there is nothing to align; skip to Step 4
-and let the section structure of the source carry the spine.
+A single-stream source such as a paper has nothing to align. Skip to Step 4 and let the
+source's own section structure become the spine.
 
 Classify every piece of material:
 
@@ -117,41 +113,42 @@ Classify every piece of material:
 | Both | The core argument | Spine prose, slide notation + lecturer's explanation |
 | Transcript only | Intuitions, asides, warnings, exam hints | Reproduce and **mark** with a `[!mic]` callout |
 
-The transcript-only set is the highest-value output of this skill when the source is a
-recording. Hunt for it deliberately.
+For a recording, the transcript-only material is what the user can't get from the
+slides, so it matters most. Search for it section by section; asides are easy to miss
+on a single read-through.
 
-### Step 4 — Write the digest
+### Step 4: Write the digest
 
-Write `<wiki_root>/<derived_dir>/<label>-<topic-kebab>-digest.md` following the template
-below, and link it back to the source page `ingest` created.
+Write `<wiki_root>/<derived_dir>/<label>-<topic-kebab>-digest.md` from the template
+below, and link it to the source page `ingest` created.
 
-The digest is derived material, not a source page. Ingest already wrote one page per
-source; a digest is a second, longer document built from it, and giving each source two
-source pages would break the indexes and the orphan checks. `.claude/wiki-schema.md` is
-authoritative on frontmatter for the derived section — re-read it if unsure.
+File the digest as derived material. Ingest already wrote the source page, and a second
+page under `sources/` for the same source would break the indexes and the orphan check.
+`.claude/wiki-schema.md` defines the frontmatter for the derived section; reread it if
+unsure.
 
-### Step 5 — Close out
+### Step 5: Close out
 
 - Add the digest to the relevant `index.md`, following `index_style`.
 - Append to `<wiki_root>/log.md`: `## [YYYY-MM-DD] digest | <label> — <topic>`.
 - Cross-link: the digest links to `[[sources/<slug>]]` and to the concept pages ingest
-  created; add a link back from the source page to the digest.
-- Run `lint` and resolve what it flags.
+  created, and the source page links back to the digest.
+- Run `lint` and fix what it reports.
 
-Concept and entity extraction is not your job — `ingest` did it when the source was
-brought in. If the digest surfaces concepts ingest missed, say so rather than silently
-creating pages; that is a signal the ingest was thin.
+Don't create concept or entity pages here; `ingest` did that when the source came in.
+If the digest turns up concepts ingest missed, tell the user instead of creating the
+pages, because it means the ingest was thin and should be fixed there.
 
-Mention to the user that `cue-cards` can turn the digest into a spaced-repetition
-deck, but don't run it unasked.
+Tell the user that `cue-cards` can turn the digest into a spaced-repetition deck, but
+don't run it unless they ask.
 
 ---
 
 ## Digest template
 
-Obsidian-native markdown throughout — callouts, LaTeX, mermaid, tables, footnotes.
-No plugins required. Foldable callouts (`-` suffix) hide answers until clicked, which
-is what makes the recall layer genuine retrieval practice rather than rereading.
+Obsidian-native markdown throughout: callouts, LaTeX, mermaid, tables, footnotes. No
+plugins required. Foldable callouts (`-` suffix) hide each answer until clicked, so the
+reader has to recall it before seeing it.
 
 ````markdown
 ---
@@ -173,7 +170,7 @@ status: complete
 > **Core claims**
 > 1. …  (5–8 claims, each a full sentence that asserts something, not a topic label)
 >
-> **Prerequisites.** [[concept]], [[concept]] — what you must already hold.
+> **Prerequisites.** [[concept]], [[concept]] — what you must already know.
 > **Where it sits.** How this follows from the previous lecture and sets up the next.
 > **Sources.** N videos (MM min total) + deck (N slides) · **digest read time ~X min**
 
@@ -186,12 +183,12 @@ Linear prose in the lecture's own order. Every `###` section anchored:
 ### <Section title>
 `slides 12–18` · [`14:20`](https://www.youtube.com/watch?v=<id>&t=860s)
 
-Tight paragraphs carrying the argument. Formal definitions reproduced exactly as
-the slides state them, in LaTeX:
+Tight paragraphs carrying the argument. Formal definitions exactly as the slides state
+them, in LaTeX:
 
 $$h(n) \leq h^*(n) \quad \forall n$$
 
-Algorithm pseudocode reproduced in full, never paraphrased:
+Algorithm pseudocode in full, never paraphrased:
 
 ```
 function A-STAR(problem, h):
@@ -199,51 +196,52 @@ function A-STAR(problem, h):
 ```
 
 > [!example] Worked example — <name>
-> Reproduced **completely**, every step. Never compressed. In an algorithms subject
-> the trace *is* the content; a summarised trace teaches nothing.
+> Every step, reproduced in full. In an algorithms subject the trace is what gets
+> examined, and a summarised trace can't be followed.
 
 > [!mic] Not on the slides — <timestamp link>
-> Lecturer-only material, quoted or closely paraphrased. Intuitions, warnings about
-> common errors, exam hints. `mic` and `exam` are the only custom callout types used;
-> without the CSS snippet they render as default note callouts, so digests stay
-> readable either way. Everything else in this template is native Obsidian.
+> Lecturer-only material, quoted or closely paraphrased: intuitions, warnings about
+> common errors, exam hints. `mic` and `exam` are the only custom callout types here.
+> Without the CSS snippet they render as default note callouts, so the digest reads
+> fine either way. Everything else in this template is native Obsidian.
 
-Use mermaid where a relationship is structural rather than verbal:
+Use mermaid where a relationship is structural, such as a pipeline or hierarchy:
 
 ```mermaid
 graph LR
     A[Model] --> B[Solver] --> C[Solution]
 ```
 
-Use tables for genuine comparisons across a fixed set of dimensions.
+Use tables for comparisons across a fixed set of dimensions.
 
 ---
 
 ## Recall Layer
 
-> [!question]- Question stated so the answer is genuinely retrievable, not guessable
+> [!question]- Question phrased so the answer has to be recalled, not guessed from the wording
 > The answer, with a `slides N` / timestamp pointer back to the spine.
 
-8–15 questions covering every core claim. Fold them (`-`) so answers stay hidden.
-Ask *why* and *when-does-this-break*, not just *what is*.
+8–15 questions covering every core claim. Fold them (`-`) so the answers stay hidden.
+Ask *why* and *when does this break* as well as *what is*.
 
 > [!failure] Common failure modes
-> Errors this material invites — direction-of-implication mistakes, assumption slips,
-> notation confusions. Draw from the lecturer's warnings where available.
+> Errors this material invites: implication run backwards, a dropped assumption,
+> confused notation. Use the lecturer's own warnings where there are any.
 
 > [!exam] Exam surface
-> What this lecture plausibly gets examined on, and in what form.
+> What this lecture is likely to be examined on, and in what form.
 
 > [!todo] Open threads
-> Genuinely unresolved after this lecture: deferred to a later lecture, stated without
-> proof, or unclear in the source. Be honest — this is where you flag your own gaps.
+> What is still unresolved after this lecture: deferred to a later one, stated without
+> proof, or unclear in the source. Include anything you couldn't work out from the
+> source yourself.
 
 ---
 
 ## Topics covered
 
-Exhaustive checklist mapping every slide range to its spine section, so nothing in the
-deck is silently dropped.
+A checklist mapping every slide range to its spine section, so no part of the deck is
+dropped without anyone noticing.
 
 - [ ] `slides 1–8` — … → [[#Section]]
 
@@ -256,17 +254,19 @@ deck is silently dropped.
 
 ## Quality bar
 
-Before handing off, verify:
+Before handing off, check:
 
-- [ ] Every spine section has both a slide range and a working timestamp link.
+- [ ] Every spine section has a slide range and a working timestamp link.
 - [ ] Every worked example and every piece of pseudocode is complete, not summarised.
-- [ ] Every technical term and proper noun checked against the slides, not the transcript.
-- [ ] Transcript-only material is present and marked — if you found none, you didn't look.
-- [ ] Recall questions are foldable and cover all core claims.
-- [ ] Topics-covered checklist accounts for every slide in the deck.
+- [ ] Every technical term and proper noun is checked against the slides, not the transcript.
+- [ ] Transcript-only material is present and marked. If you found none, search again;
+      a lecture with nothing said off-slide is rare.
+- [ ] Recall questions are foldable and cover every core claim.
+- [ ] The topics-covered checklist accounts for every slide in the deck.
 - [ ] Formalism renders: `$…$` inline, `$$…$$` block, mermaid fenced.
 - [ ] The digest links to its source page, and the source page links back.
 - [ ] `lint` passes.
 
-**The test:** could the user skip the original entirely, read this, and lose nothing but
-time? If any part of the source exists only in the original, the digest has failed.
+Last check: could the user skip the original, read only this, and lose nothing but
+time? Anything that still exists only in the original is a gap to fix before handing
+off.
